@@ -7,6 +7,10 @@ on:
       - main
   workflow_dispatch:  # 允许手动触发
 
+# 设置权限
+permissions:
+  contents: write  # 需要写入权限来创建 release
+
 jobs:
   build-windows:
     name: Build Windows
