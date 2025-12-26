@@ -4,7 +4,11 @@
       "Bash(npm run typecheck:*)",
       "mcp__context7__resolve-library-id",
       "Bash(dir /b:*)",
-      "Bash(dir /s /b /ad:*)"
+      "Bash(dir /s /b /ad:*)",
+      "mcp__github__create_repository",
+      "mcp__github__create_or_update_file",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
