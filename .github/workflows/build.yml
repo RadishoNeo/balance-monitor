@@ -151,7 +151,8 @@ jobs:
           tag_name: v${{ steps.package-version.outputs.version }}
           draft: false
           prerelease: false
-          files: artifacts/**/*
+          files: |
+            artifacts/**/*.{exe,dmg,AppImage,deb,snap}
           body: |
             Automated build for Balance Monitor v${{ steps.package-version.outputs.version }}
 
@@ -159,6 +160,5 @@ jobs:
             - Windows: balance-monitor-${{ steps.package-version.outputs.version }}-setup.exe
             - macOS: balance-monitor-${{ steps.package-version.outputs.version }}.dmg
             - Linux: AppImage, .deb, and .snap packages
-            - Unpacked: Raw application files (Windows)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
