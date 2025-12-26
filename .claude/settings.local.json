@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run typecheck:*)",
+      "mcp__context7__resolve-library-id",
+      "Bash(dir /b:*)",
+      "Bash(dir /s /b /ad:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

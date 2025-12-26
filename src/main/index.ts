@@ -3,22 +3,54 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
+// 导入自定义模块
+import { TrayManager } from './tray-manager'
+import { ConfigManager } from './config-manager'
+import { MonitorScheduler } from './monitor-scheduler'
+import { Logger } from './logger'
+import { APIEngine } from './api-engine'
+import { BalanceParser } from './balance-parser'
+
+// 全局变量
+let trayManager: TrayManager | null = null
+let configManager: ConfigManager | null = null
+let monitorScheduler: MonitorScheduler | null = null
+let mainWindow: BrowserWindow | null = null
+const logger = new Logger('Main')
+
 function createWindow(): void {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+  // 创建浏览器窗口
+  mainWindow = new BrowserWindow({
+    width: 800, // 调整为更适合配置界面的大小
+    height: 700,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      contextIsolation: true,
+      nodeIntegration: false
     }
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    if (mainWindow) {
+      mainWindow.show()
+      // 通知渲染进程已准备好
+      mainWindow.webContents.send('app-ready')
+    }
+  })
+
+  // 处理窗口关闭事件（最小化到托盘）
+  mainWindow.on('close', (event) => {
+    if (trayManager && process.platform !== 'darwin') {
+      event.preventDefault()
+      if (mainWindow) {
+        mainWindow.hide()
+      }
+      logger.info('窗口已最小化到托盘')
+    }
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -27,7 +59,6 @@ function createWindow(): void {
   })
 
   // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
@@ -35,40 +66,235 @@ function createWindow(): void {
   }
 }
 
+// 初始化核心服务
+function initializeServices(): void {
+  logger.info('正在初始化服务...')
+
+  // 1. 初始化配置管理器
+  configManager = new ConfigManager({ autoSave: true, backup: true })
+
+  // 2. 初始化托盘管理器
+  trayManager = new TrayManager()
+
+  // 3. 初始化监控调度器
+  monitorScheduler = new MonitorScheduler(configManager, trayManager)
+
+  // 4. 监听托盘事件
+  const tray = trayManager.getTray()
+  if (tray) {
+    // @ts-ignore: 自定义托盘事件
+    tray.on('manual-refresh', () => {
+      logger.info('托盘: 手动刷新')
+      if (monitorScheduler) {
+        monitorScheduler.manualQuery()
+      }
+    })
+
+    // @ts-ignore: 自定义托盘事件
+    tray.on('toggle-monitoring', () => {
+      logger.info('托盘: 切换监控状态')
+      if (monitorScheduler) {
+        const activeConfig = configManager?.getActiveConfig()
+        if (activeConfig) {
+          const status = monitorScheduler.getStatus(activeConfig.id)
+          if (status && status.status === 'running') {
+            monitorScheduler.stopAllMonitors()
+          } else {
+            monitorScheduler.startAllMonitors()
+          }
+        }
+      }
+    })
+
+    // @ts-ignore: 自定义托盘事件
+    tray.on('show-window', () => {
+      logger.info('托盘: 显示主窗口')
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) {
+          mainWindow.restore()
+        }
+        mainWindow.show()
+        mainWindow.focus()
+      }
+    })
+
+    // @ts-ignore: 自定义托盘事件
+    tray.on('show-config', () => {
+      logger.info('托盘: 显示配置')
+      if (mainWindow) {
+        mainWindow.show()
+        mainWindow.webContents.send('navigate-to-config')
+      }
+    })
+  }
+
+  logger.success('服务初始化完成')
+}
+
+// 设置IPC处理器
+function setupIPCHandlers(): void {
+  // 配置管理
+  ipcMain.handle('save-config', async (_event, config) => {
+    try {
+      if (config.id) {
+        return configManager?.updateConfig(config.id, config)
+      } else {
+        return configManager?.createConfig(config)
+      }
+    } catch (error) {
+      logger.error(`保存配置失败: ${error}`)
+      throw error
+    }
+  })
+
+  ipcMain.handle('load-config', async () => {
+    return {
+      configs: configManager?.getAllConfigs() || [],
+      activeConfigId: configManager?.getActiveConfig()?.id || null
+    }
+  })
+
+  ipcMain.handle('delete-config', async (_event, configId: string) => {
+    return configManager?.deleteConfig(configId) || false
+  })
+
+  ipcMain.handle('set-active-config', async (_event, configId: string) => {
+    return configManager?.setActiveConfig(configId) || false
+  })
+
+  ipcMain.handle('export-config', async (_event, configId: string) => {
+    return configManager?.exportConfig(configId) || null
+  })
+
+  ipcMain.handle('import-config', async (_event, jsonString: string) => {
+    return configManager?.importConfig(jsonString) || null
+  })
+
+  ipcMain.handle('validate-config', async (_event, config) => {
+    return configManager?.validateConfig(config) || { valid: false, errors: ['管理器未初始化'] }
+  })
+
+  // API测试
+  ipcMain.handle('test-api-connection', async (_event, request) => {
+    const engine = new APIEngine()
+    return await engine.testConnection(request)
+  })
+
+  // 解析器测试
+  ipcMain.handle('test-parser', async (_event, data, parserConfig) => {
+    const parser = new BalanceParser()
+    return parser.testParse(data, parserConfig)
+  })
+
+  // 日志相关
+  ipcMain.handle('get-logs', async (_event, limit = 100) => {
+    return Logger.getLogEntries(limit)
+  })
+
+  ipcMain.handle('clear-logs', async () => {
+    Logger.clearLogs()
+    return true
+  })
+
+  // 监控控制（已在MonitorScheduler中设置，这里添加额外的）
+  ipcMain.handle('get-all-statuses', async () => {
+    return monitorScheduler?.getAllStatuses() || []
+  })
+
+  // 窗口控制
+  ipcMain.handle('minimize-window', async () => {
+    if (mainWindow) {
+      mainWindow.minimize()
+      return true
+    }
+    return false
+  })
+
+  ipcMain.handle('close-window', async () => {
+    if (mainWindow) {
+      mainWindow.close()
+      return true
+    }
+    return false
+  })
+
+  // 获取应用信息
+  ipcMain.handle('get-app-info', async () => {
+    return {
+      version: app.getVersion(),
+      name: app.getName(),
+      platform: process.platform,
+      configDir: configManager ? configManager['configDir'] : null
+    }
+  })
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+  electronApp.setAppUserModelId('com.electron.app')
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  // 初始化服务
+  initializeServices()
 
+  // 设置IPC处理器
+  setupIPCHandlers()
+
+  // 创建主窗口
   createWindow()
 
+  // 更新窗口引用到调度器
+  if (monitorScheduler && mainWindow) {
+    monitorScheduler.setMainWindow(mainWindow)
+  }
+
+  // macOS特定处理
   app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow()
+    }
   })
+
+  logger.success('应用启动完成')
 })
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+// 应用退出前的清理
+app.on('before-quit', () => {
+  logger.info('正在退出应用...')
+
+  if (monitorScheduler) {
+    monitorScheduler.destroy()
+  }
+
+  if (trayManager) {
+    trayManager.destroy()
+  }
+
+  logger.info('清理完成')
+})
+
+// Quit when all windows are closed, except on macOS.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+// 处理未捕获的异常
+process.on('uncaughtException', (error) => {
+  logger.error(`未捕获的异常: ${error.message}`)
+  console.error(error)
+})
+
+process.on('unhandledRejection', (reason) => {
+  logger.error(`未处理的Promise拒绝: ${reason}`)
+  console.error(reason)
+})

@@ -28,5 +28,14 @@ export default defineConfig(
       ...eslintPluginReactRefresh.configs.vite.rules
     }
   },
-  eslintConfigPrettier
+  eslintConfigPrettier,
+  //允许any
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      //eslint(react-hooks/set-state-in-effect)
+      'react-hooks/set-state-in-effect': 'off',
+    }
+  }
 )
