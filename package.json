@@ -1,6 +1,6 @@
 {
   "name": "balance-monitor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description":"monitor balance of api",
   "main": "./out/main/index.js",
   "author": "qingbo.my@gmail.com",
