@@ -152,13 +152,17 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            artifacts/**/*.{exe,dmg,AppImage,deb,snap}
+            artifacts/windows-build/*
+            artifacts/macos-build/*
+            artifacts/linux-build/*
           body: |
             Automated build for Balance Monitor v${{ steps.package-version.outputs.version }}
 
             ## Downloads
-            - Windows: balance-monitor-${{ steps.package-version.outputs.version }}-setup.exe
-            - macOS: balance-monitor-${{ steps.package-version.outputs.version }}.dmg
-            - Linux: AppImage, .deb, and .snap packages
+            - Windows Installer: balance-monitor-${{ steps.package-version.outputs.version }}-setup.exe
+            - macOS DMG: balance-monitor-${{ steps.package-version.outputs.version }}.dmg
+            - Linux AppImage: balance-monitor-${{ steps.package-version.outputs.version }}.AppImage
+            - Linux DEB: balance-monitor_${{ steps.package-version.outputs.version }}_amd64.deb
+            - Linux Snap: balance-monitor_${{ steps.package-version.outputs.version }}_amd64.snap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
