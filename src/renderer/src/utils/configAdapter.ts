@@ -9,8 +9,7 @@ export function adaptTemplateConfig(
     name: template.name,
     url: template.url,
     method: template.method,
-    auth: template.auth,
-    response: template.response
+    auth: template.auth
   }
 }
 

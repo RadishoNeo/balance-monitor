@@ -85,16 +85,6 @@ export const MonitoringSettings: React.FC<MonitoringSettingsProps> = ({
         <h3 className="font-medium mb-3 text-lg text-foreground">轮询设置</h3>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-foreground">启用监控</label>
-            <input
-              type="checkbox"
-              checked={monitoring.enabled}
-              onChange={(e) => handleFieldChange('monitoring', 'enabled', e.target.checked)}
-              className="w-5 h-5 cursor-pointer accent-primary"
-            />
-          </div>
-
           <div>
             <label className="block text-sm font-medium mb-1 text-foreground">轮询间隔 (秒)</label>
             <div className="flex gap-2 items-center">
@@ -175,7 +165,7 @@ export const MonitoringSettings: React.FC<MonitoringSettingsProps> = ({
                 <span className="text-muted-foreground">警告</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 bg-destructive rounded-full"></span>
+                <span className="w-3 h-3 bg-red-500 rounded-full"></span>
                 <span className="text-muted-foreground">危险</span>
               </div>
             </div>

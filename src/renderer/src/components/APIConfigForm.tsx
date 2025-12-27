@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { balanceList } from '../config/balace'
 import { useAutoSave } from '@renderer/hooks'
+import { useFormStore, selectUpdateAPIForm } from '@renderer/store'
 
 interface APIConfigFormProps {
   initialData?: Partial<BalanceMonitorConfig>
@@ -101,16 +102,8 @@ export const APIConfigForm: React.FC<APIConfigFormProps> = ({
     if (!onTest) return
 
     // 验证
-    if (!formData.name) {
-      toast.error('配置名称不能为空')
-      return
-    }
     if (!formData.url) {
       toast.error('API地址不能为空')
-      return
-    }
-    if (!formData.auth?.apiKey) {
-      toast.error('API密钥不能为空')
       return
     }
 
@@ -146,24 +139,28 @@ export const APIConfigForm: React.FC<APIConfigFormProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configId]) // 只在 configId 变化时重新加载数据
 
+  const updateAPIForm = useFormStore(selectUpdateAPIForm)
+
+  // 同步到 Zustand store，供解析器测试使用
+  useEffect(() => {
+    updateAPIForm({
+      name: formData.name,
+      api: {
+        url: formData.url as string,
+        method: (formData.method as any) || 'GET',
+        auth: formData.auth,
+        timeout: formData.timeout,
+        body: formData.body,
+        headers: [] // 基础配置不包含额外 headers
+      }
+    })
+  }, [formData, updateAPIForm])
+
   return (
     <div className="space-y-4 group">
       {/* 保存状态指示器 */}
       <div className="text-xs text-muted-foreground text-right h-4">
         {isSaving && <span className="text-primary italic">保存中...</span>}
-      </div>
-
-      {/* 配置名称 */}
-      <div>
-        <label className="block text-sm font-medium mb-1 text-foreground">配置名称</label>
-        <input
-          type="text"
-          value={formData.name}
-          onChange={(e) => handleFieldChange('name', e.target.value)}
-          placeholder="例如: DeepSeek, Moonshot"
-          className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-        />
-        <p className="text-xs text-muted-foreground mt-1">为你的配置取一个易于识别的名称</p>
       </div>
 
       {/* 配置模板选择 */}

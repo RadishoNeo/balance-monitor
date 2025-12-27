@@ -111,7 +111,7 @@ export class TrayManager {
   private emit(event: string): void {
     // 通过事件发射器通知主进程
     if (this.tray) {
-      ; (this.tray as any).emit(event)
+      ;(this.tray as any).emit(event)
     }
   }
 

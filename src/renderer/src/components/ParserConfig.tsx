@@ -6,12 +6,12 @@ import { useFormStore, selectParserFormState, selectUpdateParserForm } from '@re
 
 interface ParserConfigProps {
   initialData?:
-  | (Partial<ParserConfigType> & {
-    isAvailablePath?: string
-    balanceMappings?: BalanceInfoMapping[]
-    isPreset?: boolean
-  })
-  | null
+    | (Partial<ParserConfigType> & {
+        isAvailablePath?: string
+        balanceMappings?: BalanceInfoMapping[]
+        isPreset?: boolean
+      })
+    | null
   onChange: (data: any) => Promise<void>
   onTest?: (data: any, sampleData: any) => Promise<any>
   loading?: boolean
@@ -201,9 +201,9 @@ export const ParserConfig: React.FC<ParserConfigProps> = ({
         ...(showCustom
           ? { customParser: formData.customParser }
           : {
-            isAvailablePath: formData.isAvailablePath,
-            balanceMappings: formData.balanceMappings
-          })
+              isAvailablePath: formData.isAvailablePath,
+              balanceMappings: formData.balanceMappings
+            })
       }
       // 将 sampleData 作为第一个参数，配置 (testData) 作为第二个参数，以匹配 App.tsx 的 handleTestParser
       const result = await onTest(sampleData, testData)
@@ -280,10 +280,11 @@ ${JSON.stringify(sampleData, null, 2)}
           <button
             type="button"
             onClick={() => toggleCustom(false)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold transition-all duration-200 rounded-lg ${!showCustom
-              ? 'bg-primary text-primary-foreground shadow-sm scale-105'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              }`}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold transition-all duration-200 rounded-lg ${
+              !showCustom
+                ? 'bg-primary text-primary-foreground shadow-sm scale-105'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            }`}
           >
             <span className="text-base">📋</span>
             字段映射
@@ -291,10 +292,11 @@ ${JSON.stringify(sampleData, null, 2)}
           <button
             type="button"
             onClick={() => toggleCustom(true)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold transition-all duration-200 rounded-lg ${showCustom
-              ? 'bg-primary text-primary-foreground shadow-sm scale-105'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              }`}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold transition-all duration-200 rounded-lg ${
+              showCustom
+                ? 'bg-primary text-primary-foreground shadow-sm scale-105'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            }`}
           >
             <span className="text-base">💻</span>
             自定义解析器

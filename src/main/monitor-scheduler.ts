@@ -321,7 +321,7 @@ export class MonitorScheduler {
     // 记录成功日志
     this.logger.success(
       `[${config.name}] 余额: ${parsed.currency}${parsed.balance.toFixed(2)} ` +
-      `(响应: ${response.responseTime}ms)`
+        `(响应: ${response.responseTime}ms)`
     )
 
     // 通知UI

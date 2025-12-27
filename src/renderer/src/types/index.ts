@@ -79,6 +79,7 @@ export interface APIRequest {
   url: string
   method: 'GET' | 'POST'
   headers: Array<{ key: string; value: string }>
+  auth?: any
   body?: string
   timeout?: number
 }

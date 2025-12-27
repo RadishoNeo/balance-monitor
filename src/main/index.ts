@@ -143,9 +143,13 @@ function setupIPCHandlers(): void {
         savedConfig = configManager?.createConfig(config)
       }
 
-      // 如果配置已启用，自动启动显示
-      if (savedConfig && savedConfig.monitoring?.enabled && monitorScheduler) {
-        monitorScheduler.startMonitor(savedConfig.id)
+      // 如果配置已启用/禁用，自动调整监控状态
+      if (savedConfig && monitorScheduler) {
+        if (savedConfig.monitoring?.enabled) {
+          monitorScheduler.startMonitor(savedConfig.id)
+        } else {
+          monitorScheduler.stopMonitor(savedConfig.id)
+        }
       }
 
       return savedConfig

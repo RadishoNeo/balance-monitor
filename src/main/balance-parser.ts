@@ -84,7 +84,9 @@ export class BalanceParser {
               const num = this.convertToNumber(val)
               if (!isNaN(num)) {
                 grantedBalance += num
-                this.logger.debug(`[Parser] 从路径 [${mapping.granted_balance}] 提取到赠送余额: ${num}`)
+                this.logger.debug(
+                  `[Parser] 从路径 [${mapping.granted_balance}] 提取到赠送余额: ${num}`
+                )
               }
             } catch {
               // 赠送余额解析失败不影响主流程
@@ -97,7 +99,9 @@ export class BalanceParser {
               const num = this.convertToNumber(val)
               if (!isNaN(num)) {
                 toppedUpBalance += num
-                this.logger.debug(`[Parser] 从路径 [${mapping.topped_up_balance}] 提取到充值余额: ${num}`)
+                this.logger.debug(
+                  `[Parser] 从路径 [${mapping.topped_up_balance}] 提取到充值余额: ${num}`
+                )
               }
             } catch {
               // 充值余额解析失败不影响主流程

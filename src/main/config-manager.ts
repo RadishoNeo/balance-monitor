@@ -122,14 +122,13 @@ export class ConfigManager {
           const configsArray = JSON.parse(decrypted)
           this.configs.clear()
           configsArray.forEach((config: BalanceMonitorConfig) => {
-            this.configs.set(config.id, config)
+            // 加载到内存时解密敏感字段
+            this.configs.set(config.id, this.decryptConfig(config))
           })
           this.logger.info(`成功加载 ${this.configs.size} 个配置`)
           return
         } catch (decryptError) {
-          console.error(decryptError)
-
-          this.logger.warn('安全存储解密失败，尝试明文解析')
+          this.logger.warn(`安全存储解密失败，尝试明文解析,错误信息: ${String(decryptError)}`)
         }
       }
 
@@ -138,7 +137,7 @@ export class ConfigManager {
       const configsArray = JSON.parse(decrypted)
       this.configs.clear()
       configsArray.forEach((config: BalanceMonitorConfig) => {
-        this.configs.set(config.id, config)
+        this.configs.set(config.id, this.decryptConfig(config))
       })
       this.logger.info(`成功加载 ${this.configs.size} 个配置（明文）`)
     } catch (error) {
@@ -220,9 +219,9 @@ export class ConfigManager {
     try {
       const files = existsSync(this.backupDir)
         ? readdirSync(this.backupDir).map((f: string) => ({
-          name: f,
-          time: statSync(join(this.backupDir, f)).mtime
-        }))
+            name: f,
+            time: statSync(join(this.backupDir, f)).mtime
+          }))
         : []
 
       if (files.length > 10) {
@@ -252,15 +251,23 @@ export class ConfigManager {
   }
 
   private decryptValue(encryptedValue: string): string {
+    if (!encryptedValue || encryptedValue.length < 5) return encryptedValue
     try {
       if (safeStorage.isEncryptionAvailable()) {
         const buffer = Buffer.from(encryptedValue, 'base64')
         return safeStorage.decryptString(buffer)
       }
-      // 降级解码
       return Buffer.from(encryptedValue, 'base64').toString()
-    } catch (error) {
-      this.logger.error(`解密失败: ${error}`)
+    } catch (error: any) {
+      // 如果报错暗示不是加密内容，则直接返回原值，不记录错误
+      const errorMsg = String(error)
+      if (
+        errorMsg.includes('Ciphertext does not appear to be encrypted') ||
+        errorMsg.includes('decryption failed')
+      ) {
+        return encryptedValue
+      }
+      this.logger.warn(`解密失败 (假定为明文): ${error}`)
       return encryptedValue
     }
   }
@@ -330,12 +337,13 @@ export class ConfigManager {
     const config = this.configs.get(id)
     if (!config) return null
 
-    // 解密敏感字段
-    return this.decryptConfig(config)
+    // 内存中已经是解密状态
+    return config
   }
 
   getAllConfigs(): BalanceMonitorConfig[] {
-    return Array.from(this.configs.values()).map((config) => this.decryptConfig(config))
+    // 内存中已经是解密状态
+    return Array.from(this.configs.values())
   }
 
   private decryptConfig(config: BalanceMonitorConfig): BalanceMonitorConfig {
@@ -461,7 +469,8 @@ export class ConfigManager {
 
     const hasBalancePath = config.parser.balancePath && config.parser.balancePath.trim().length > 0
     const hasMappings = config.parser.balanceMappings && config.parser.balanceMappings.length > 0
-    const hasCustomParser = config.parser.customParser && config.parser.customParser.trim().length > 0
+    const hasCustomParser =
+      config.parser.customParser && config.parser.customParser.trim().length > 0
 
     if (!hasBalancePath && !hasMappings && !hasCustomParser) {
       errors.push('余额解析规则不能为空（必须配置解析路径、字段映射或自定义脚本）')
@@ -488,12 +497,12 @@ export class ConfigManager {
     const lastUpdate =
       configs.length > 0
         ? configs.reduce(
-          (latest, c) => {
-            const time = new Date(c.updatedAt).getTime()
-            return !latest || time > new Date(latest).getTime() ? c.updatedAt : latest
-          },
-          null as string | null
-        )
+            (latest, c) => {
+              const time = new Date(c.updatedAt).getTime()
+              return !latest || time > new Date(latest).getTime() ? c.updatedAt : latest
+            },
+            null as string | null
+          )
         : null
 
     return {

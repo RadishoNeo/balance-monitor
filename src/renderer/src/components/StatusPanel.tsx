@@ -60,7 +60,9 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4 bg-card/40 backdrop-blur-xl p-6 rounded-3xl border border-border/40 shadow-xl shadow-black/5">
         <div className="flex items-center gap-6">
           <div className="flex flex-col">
-            <span className="text-[10px] uppercase tracking-widest font-black text-muted-foreground/60 mb-2">Monitor Controls</span>
+            <span className="text-[10px] uppercase tracking-widest font-black text-muted-foreground/60 mb-2">
+              Monitor Controls
+            </span>
             <div className="flex items-center gap-3">
               {!isMonitoring ? (
                 <button
@@ -92,15 +94,23 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
 
           <div className="flex gap-8">
             <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-bold text-muted-foreground/50 mb-1">Status</span>
+              <span className="text-[10px] uppercase font-bold text-muted-foreground/50 mb-1">
+                Status
+              </span>
               <div className="flex items-center gap-2">
-                <span className={`h-2.5 w-2.5 rounded-full ${isMonitoring ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></span>
+                <span
+                  className={`h-2.5 w-2.5 rounded-full ${isMonitoring ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}
+                ></span>
                 <span className="font-black text-sm">{isMonitoring ? 'ACTIVE' : 'IDLE'}</span>
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-bold text-muted-foreground/50 mb-1">Endpoints</span>
-              <span className="font-black text-sm">{stats.running} / {stats.total}</span>
+              <span className="text-[10px] uppercase font-bold text-muted-foreground/50 mb-1">
+                Endpoints
+              </span>
+              <span className="font-black text-sm">
+                {stats.running} / {stats.total}
+              </span>
             </div>
           </div>
         </div>
@@ -113,19 +123,24 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
           .map((status) => (
             <div
               key={status.configId}
-              className={`group relative overflow-hidden rounded-3xl p-6 shadow-2xl transition-all duration-500 hover:scale-[1.03] hover:-translate-y-1 ${status.status === 'error'
-                ? 'border-2 border-destructive/20 bg-destructive/5'
-                : 'bg-gradient-to-br from-card to-card/50 border border-border/40'
-                }`}
+              className={`group relative overflow-hidden rounded-3xl p-6 shadow-2xl transition-all duration-500 hover:scale-[1.03] hover:-translate-y-1 ${
+                status.status === 'error'
+                  ? 'border-2 border-destructive/20 bg-destructive/5'
+                  : 'bg-gradient-to-br from-card to-card/50 border border-border/40'
+              }`}
             >
               {/* 装饰性背景 */}
-              <div className={`absolute -right-8 -top-8 h-32 w-32 rounded-full blur-[60px] opacity-20 transition-all group-hover:opacity-40 ${status.status === 'error' ? 'bg-destructive' : 'bg-primary'}`}></div>
+              <div
+                className={`absolute -right-8 -top-8 h-32 w-32 rounded-full blur-[60px] opacity-20 transition-all group-hover:opacity-40 ${status.status === 'error' ? 'bg-destructive' : 'bg-primary'}`}
+              ></div>
 
               <div className="relative z-10 flex flex-col h-full">
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className={`h-2 w-2 rounded-full ${status.status === 'error' ? 'bg-destructive animate-pulse' : 'bg-green-500'}`}></span>
+                      <span
+                        className={`h-2 w-2 rounded-full ${status.status === 'error' ? 'bg-destructive animate-pulse' : 'bg-green-500'}`}
+                      ></span>
                       <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                         {status.status === 'error' ? 'Service Error' : 'Live Status'}
                       </span>
@@ -134,9 +149,13 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
                       {getConfigName(status.configId)}
                     </h3>
                   </div>
-                  <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-xl shadow-inner ${status.status === 'error'
-                    ? 'bg-destructive/10 text-destructive'
-                    : 'bg-primary/10 text-primary'}`}>
+                  <div
+                    className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-xl shadow-inner ${
+                      status.status === 'error'
+                        ? 'bg-destructive/10 text-destructive'
+                        : 'bg-primary/10 text-primary'
+                    }`}
+                  >
                     {status.status === 'error' ? '⚠️' : '🏦'}
                   </div>
                 </div>
@@ -144,7 +163,11 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
                 <div className="flex-1 flex flex-col justify-center py-4">
                   <div className="flex items-baseline gap-2 mb-1">
                     <span className="text-3xl font-black tracking-tighter text-foreground">
-                      {status.balance !== undefined ? formatNum(status.balance) : (status.status === 'error' ? '---' : '同步中...')}
+                      {status.balance !== undefined
+                        ? formatNum(status.balance)
+                        : status.status === 'error'
+                          ? '---'
+                          : '同步中...'}
                     </span>
                     <span className="text-sm font-black text-muted-foreground opacity-60 uppercase">
                       {status.currency || '¥'}
@@ -152,16 +175,21 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
                   </div>
 
                   {/* 深层详细余额 (DeepSeek 等支持详情的模板) */}
-                  {(status.grantedBalance !== undefined || status.toppedUpBalance !== undefined) && (
+                  {(status.grantedBalance !== undefined ||
+                    status.toppedUpBalance !== undefined) && (
                     <div className="mt-4 grid grid-cols-2 gap-3 p-3 rounded-2xl bg-muted/30 border border-border/20">
                       <div>
-                        <p className="text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">充值余额</p>
+                        <p className="text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">
+                          充值余额
+                        </p>
                         <p className="text-xs font-black text-foreground/80">
                           {formatNum(status.toppedUpBalance) || '0.00'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">赠送余额</p>
+                        <p className="text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">
+                          赠送余额
+                        </p>
                         <p className="text-xs font-black text-foreground/80">
                           {formatNum(status.grantedBalance) || '0.00'}
                         </p>
@@ -172,7 +200,9 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
 
                 <div className="mt-6 flex items-center justify-between pt-4 border-t border-border/40">
                   <div className="flex flex-col">
-                    <span className="text-[8px] uppercase font-black text-muted-foreground/40 mb-1">Last Updated</span>
+                    <span className="text-[8px] uppercase font-black text-muted-foreground/40 mb-1">
+                      Last Updated
+                    </span>
                     <span className="text-[10px] font-bold opacity-80">
                       {status.lastRun ? new Date(status.lastRun).toLocaleTimeString() : '从未'}
                     </span>

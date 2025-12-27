@@ -12,7 +12,6 @@ import { ParserConfig } from './components/ParserConfig'
 import { MonitoringSettings } from './components/MonitoringSettings'
 import { StatusPanel } from './components/StatusPanel'
 import { LogViewer } from './components/LogViewer'
-import { TestConnection } from './components/TestConnection'
 
 const generateDefaultName = () => `配置-${Date.now()}`
 
@@ -52,7 +51,20 @@ function App(): React.JSX.Element {
 
   // 新建配置
   const handleNewConfig = () => {
-    setEditingConfig(undefined)
+    const newDraft: any = {
+      name: generateDefaultName(),
+      api: {
+        url: '',
+        method: 'GET',
+        headers: [],
+        timeout: 10000,
+        auth: { type: 'Bearer', apiKey: '', headerKey: 'Authorization' }
+      },
+      parser: {},
+      monitoring: { enabled: false, interval: 30 },
+      thresholds: { warning: 50, danger: 10, currency: '¥' }
+    }
+    setEditingConfig(newDraft)
     setShowNewConfig(true)
     setActiveTab('config')
     setCurrentPage('config')
@@ -73,8 +85,6 @@ function App(): React.JSX.Element {
       showNotification('配置已删除')
     }
   }
-
-
 
   // 导出配置
   const handleExportConfig = async (configId: string) => {
@@ -104,30 +114,17 @@ function App(): React.JSX.Element {
 
   // API测试 (适配新的 APIConfigForm 格式)
   const handleTestAPI = async (request: any) => {
-    // 将新的格式转换为旧的 APIRequest 格式
+    // 兼容层：处理可能存在的 .api 嵌套结构
+    const config = request.api || request
+
+    // 将新的格式转换为 APIRequest 格式
     const apiRequest: APIRequest = {
-      url: request.url,
-      method: request.method,
-      headers: [],
-      body: request.body,
-      timeout: request.timeout
-    }
-
-    // 添加认证头
-    if (request.auth) {
-      const { type, apiKey, headerKey = 'Authorization' } = request.auth
-      let authValue = ''
-
-      if (type === 'Bearer') {
-        authValue = `Bearer ${apiKey}`
-      } else if (type === 'Basic') {
-        authValue = `Basic ${btoa(apiKey)}`
-      }
-
-      apiRequest.headers.push({
-        key: headerKey,
-        value: authValue
-      })
+      url: config.url,
+      method: config.method,
+      headers: config.headers || [],
+      auth: config.auth, // 直接传递 auth 对象，由后端统一处理
+      body: config.body,
+      timeout: config.timeout
     }
 
     const result = await balanceMonitor.testApiConnection(apiRequest)
@@ -143,7 +140,7 @@ function App(): React.JSX.Element {
     if (!testData) {
       // 如果没有测试数据，尝试从当前的 API 配置中获取
       const apiState = (await import('./store')).useFormStore.getState().apiFormState
-      if (!apiState.url) {
+      if (!apiState.api?.url) {
         return { success: false, error: '请先在"API配置"标签页中设置 API 地址并填写 API Key' }
       }
 
@@ -266,7 +263,7 @@ function App(): React.JSX.Element {
       configManager.loadConfigs()
       loadLogs()
     }
-  }, [appReady, api, configManager.loadConfigs, loadLogs])
+  }, [appReady, api, configManager, loadLogs]) // Added configManager to satisfy linter and ensure stability
 
   // 显示错误或警告 toast
   useEffect(() => {
@@ -284,11 +281,16 @@ function App(): React.JSX.Element {
   // 渲染页面
   const renderPage = () => {
     switch (currentPage) {
-      case 'dashboard':
+      case 'dashboard': {
+        const enabledConfigs = configManager.configs.filter((c) => c.monitoring.enabled)
+        const enabledStatuses = balanceMonitor.statuses.filter((s) =>
+          enabledConfigs.some((c) => c.id === s.configId)
+        )
+
         return (
           <StatusPanel
-            statuses={balanceMonitor.statuses}
-            configs={configManager.configs}
+            statuses={enabledStatuses}
+            configs={enabledConfigs}
             isMonitoring={balanceMonitor.isMonitoring}
             onManualQuery={handleManualQuery}
             onStart={handleStartMonitoring}
@@ -296,6 +298,7 @@ function App(): React.JSX.Element {
             loading={balanceMonitor.loading}
           />
         )
+      }
 
       case 'config':
         if (showNewConfig) {
@@ -305,17 +308,17 @@ function App(): React.JSX.Element {
           // 准备 APIConfigForm 的初始数据（扁平结构）
           const apiFormInitialData = editingConfig
             ? {
-              name: editingConfig.name,
-              url: editingConfig.api?.url || '',
-              method: editingConfig.api?.method || 'GET',
-              auth: editingConfig.api?.auth || {
-                type: 'Bearer' as const,
-                apiKey: '',
-                headerKey: 'Authorization' as const
-              },
-              timeout: editingConfig.api?.timeout || 10000,
-              body: editingConfig.api?.body || ''
-            }
+                name: editingConfig.name,
+                url: editingConfig.api?.url || '',
+                method: editingConfig.api?.method || 'GET',
+                auth: editingConfig.api?.auth || {
+                  type: 'Bearer' as const,
+                  apiKey: '',
+                  headerKey: 'Authorization' as const
+                },
+                timeout: editingConfig.api?.timeout || 10000,
+                body: editingConfig.api?.body || ''
+              }
             : undefined
 
           // 处理标签页切换（保存当前标签页的数据）
@@ -371,9 +374,18 @@ function App(): React.JSX.Element {
                   </label>
                   <input
                     type="text"
-                    defaultValue={editingConfig?.name}
+                    value={editingConfig?.name || ''}
                     id="config-name-input"
                     placeholder="例如: DeepSeek 官方 API"
+                    onChange={(e) => {
+                      const newName = e.target.value
+                      setEditingConfig((prev) => (prev ? { ...prev, name: newName } : undefined))
+                    }}
+                    onBlur={() => {
+                      if (editingConfig) {
+                        handleSaveFullConfig({ name: editingConfig.name })
+                      }
+                    }}
                     className="w-full bg-transparent text-lg font-bold text-foreground focus:outline-none border-b border-transparent focus:border-primary/50 px-1 py-1 transition-all placeholder:text-muted-foreground/30"
                   />
                 </div>
@@ -383,16 +395,17 @@ function App(): React.JSX.Element {
                   {[
                     { key: 'config', label: 'API配置', icon: '🔗' },
                     { key: 'parser', label: '解析器', icon: '🔍' },
-                    { key: 'monitoring', label: '监控设置', icon: '🔔' },
-                    { key: 'test', label: '测试', icon: '🧪' }
+                    { key: 'monitoring', label: '监控设置', icon: '🔔' }
+                    // { key: 'test', label: '测试', icon: '🧪' }
                   ].map((tab) => (
                     <button
                       key={tab.key}
                       onClick={() => handleTabSwitch(tab.key as any)}
-                      className={`flex items-center gap-2.5 px-6 py-2.5 text-sm font-bold transition-all duration-300 rounded-xl ${activeTab === tab.key
-                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 select-none'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
-                        }`}
+                      className={`flex items-center gap-2.5 px-6 py-2.5 text-sm font-bold transition-all duration-300 rounded-xl ${
+                        activeTab === tab.key
+                          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 select-none'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
+                      }`}
                     >
                       <span className="text-lg">{tab.icon}</span>
                       {tab.label}
@@ -453,9 +466,9 @@ function App(): React.JSX.Element {
                   />
                 )}
 
-                {activeTab === 'test' && (
+                {/* {activeTab === 'test' && (
                   <TestConnection onTestAPI={handleTestAPI} onTestParser={handleTestParser} />
-                )}
+                )} */}
               </div>
             </div>
           )
@@ -468,7 +481,7 @@ function App(): React.JSX.Element {
               onNewConfig={handleNewConfig}
               onEditConfig={handleEditConfig}
               onDeleteConfig={handleDeleteConfig}
-              onSetActiveConfig={async () => { }}
+              onSetActiveConfig={async () => {}}
               onExportConfig={handleExportConfig}
               onImportConfig={handleImportConfig}
               onToggleMonitoring={async (id, enabled) => {
@@ -521,10 +534,11 @@ function App(): React.JSX.Element {
                 <button
                   key={item.key}
                   onClick={() => setCurrentPage(item.key as PageType)}
-                  className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${currentPage === item.key
-                    ? 'bg-card text-primary shadow-lg shadow-black/5 ring-1 ring-border/10 scale-105'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
-                    }`}
+                  className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                    currentPage === item.key
+                      ? 'bg-card text-primary shadow-lg shadow-black/5 ring-1 ring-border/10 scale-105'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
+                  }`}
                 >
                   <span className="text-lg">{item.icon}</span>
                   {item.label}
@@ -548,9 +562,13 @@ function App(): React.JSX.Element {
               <span className="p-1.5 rounded-lg bg-muted text-lg">📁</span>
               <div className="flex flex-col">
                 <span className="text-[8px] opacity-40 mb-1">Monitoring Status</span>
-                {configManager.configs.filter(c => c.monitoring.enabled).length > 0 ? (
+                {configManager.configs.filter((c) => c.monitoring.enabled).length > 0 ? (
                   <span className="text-foreground">
-                    TRACKING <span className="text-primary">{configManager.configs.filter(c => c.monitoring.enabled).length}</span> SERVICES
+                    TRACKING{' '}
+                    <span className="text-primary">
+                      {configManager.configs.filter((c) => c.monitoring.enabled).length}
+                    </span>{' '}
+                    SERVICES
                   </span>
                 ) : (
                   <span className="text-destructive animate-pulse flex items-center gap-1">

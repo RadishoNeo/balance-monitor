@@ -103,7 +103,9 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${config.monitoring.enabled ? 'bg-primary/10' : 'bg-muted'}`}>
+                    <div
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${config.monitoring.enabled ? 'bg-primary/10' : 'bg-muted'}`}
+                    >
                       {config.monitoring.enabled ? '🟢' : '⚪'}
                     </div>
                     <div>
@@ -118,7 +120,9 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({
 
                   {/* 现代化切换开关 */}
                   <div className="flex flex-col items-end gap-1">
-                    <span className="text-[8px] font-black uppercase text-muted-foreground/40 tracking-widest">Monitor</span>
+                    <span className="text-[8px] font-black uppercase text-muted-foreground/40 tracking-widest">
+                      Monitor
+                    </span>
                     <button
                       onClick={() => handleToggle(config.id, config.monitoring.enabled)}
                       disabled={loading}
