@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useConfigManager, useBalanceMonitor, useElectronAPI, useElectronEvents } from './hooks'
 import { BalanceMonitorConfig, PageType, APIRequest } from './types'
+import logo from './assets/logo.svg'
 
 import { Toaster, toast } from 'sonner'
 
@@ -272,17 +273,17 @@ function App(): React.JSX.Element {
           // 准备 APIConfigForm 的初始数据（扁平结构）
           const apiFormInitialData = editingConfig
             ? {
-                name: editingConfig.name,
-                url: editingConfig.api?.url || '',
-                method: editingConfig.api?.method || 'GET',
-                auth: editingConfig.api?.auth || {
-                  type: 'Bearer' as const,
-                  apiKey: '',
-                  headerKey: 'Authorization' as const
-                },
-                timeout: editingConfig.api?.timeout || 10000,
-                body: editingConfig.api?.body || ''
-              }
+              name: editingConfig.name,
+              url: editingConfig.api?.url || '',
+              method: editingConfig.api?.method || 'GET',
+              auth: editingConfig.api?.auth || {
+                type: 'Bearer' as const,
+                apiKey: '',
+                headerKey: 'Authorization' as const
+              },
+              timeout: editingConfig.api?.timeout || 10000,
+              body: editingConfig.api?.body || ''
+            }
             : undefined
 
           // 处理标签页切换（保存当前标签页的数据）
@@ -356,11 +357,10 @@ function App(): React.JSX.Element {
                     <button
                       key={tab.key}
                       onClick={() => handleTabSwitch(tab.key as any)}
-                      className={`flex items-center gap-2.5 px-6 py-2.5 text-sm font-bold transition-all duration-300 rounded-xl ${
-                        activeTab === tab.key
+                      className={`flex items-center gap-2.5 px-6 py-2.5 text-sm font-bold transition-all duration-300 rounded-xl ${activeTab === tab.key
                           ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 select-none'
                           : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
-                      }`}
+                        }`}
                     >
                       <span className="text-lg">{tab.icon}</span>
                       {tab.label}
@@ -456,15 +456,19 @@ function App(): React.JSX.Element {
         <div className="max-w-full px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground font-bold shadow-lg shadow-primary/30 transform transition-transform hover:rotate-12 cursor-default">
-                <span className="text-xl">¥</span>
+              <div className="w-12 h-12 flex-none group cursor-default">
+                <img
+                  src={logo}
+                  alt="Balance Monitor Logo"
+                  className="w-full h-full drop-shadow-xl transition-all duration-500 group-hover:rotate-[10deg] group-hover:scale-110"
+                />
               </div>
               <div>
-                <h1 className="text-xl font-black tracking-tight text-foreground">
+                <h1 className="text-xl font-black tracking-tight text-foreground leading-none">
                   BALANCE<span className="text-primary">.</span>MONITOR
                 </h1>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                  Cloud Service Portfolio
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mt-1.5">
+                  Institutional Grade Tracking
                 </p>
               </div>
             </div>
@@ -479,11 +483,10 @@ function App(): React.JSX.Element {
                 <button
                   key={item.key}
                   onClick={() => setCurrentPage(item.key as PageType)}
-                  className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
-                    currentPage === item.key
+                  className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${currentPage === item.key
                       ? 'bg-card text-primary shadow-lg shadow-black/5 ring-1 ring-border/10 scale-105'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
-                  }`}
+                    }`}
                 >
                   <span className="text-lg">{item.icon}</span>
                   {item.label}
