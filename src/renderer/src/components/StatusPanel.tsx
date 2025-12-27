@@ -28,25 +28,75 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
     stopped: statuses.filter((s) => s.status === 'stopped').length
   }
 
-  // 根据 ID 获取配置名称
-  const getConfigName = (configId: string) => {
-    const config = configs.find((c) => c.id === configId)
-    return config?.name || '未知服务'
+  // 根据 ID 获取配置
+  const getConfig = (configId: string) => {
+    return configs.find((c) => c.id === configId)
   }
 
-  // 获取状态颜色
-  // const getStatusColor = (status: string) => {
-  //   switch (status) {
-  //     case 'running':
-  //       return 'bg-green-500'
-  //     case 'error':
-  //       return 'bg-red-500'
-  //     case 'stopped':
-  //       return 'bg-gray-500'
-  //     default:
-  //       return 'bg-muted-foreground'
-  //   }
-  // }
+  // 获取状态显示信息 (包含阈值判断)
+  const getStatusInfo = (status: MonitorStatus, config?: ReturnType<typeof getConfig>) => {
+    const isError = status.status === 'error'
+    const balance = status.balance ?? 0
+    const thresholds = config?.thresholds
+
+    // 默认状态（无阈值配置或未连接）
+    if (!thresholds || isError) {
+      if (isError) {
+        return {
+          color: 'bg-destructive',
+          textColor: 'text-destructive',
+          borderColor: 'border-destructive/20',
+          bgGradient: 'bg-destructive/5',
+          glow: 'bg-destructive',
+          statusText: 'Service Error',
+          icon: '⚠️'
+        }
+      }
+      // 正常运行但无具体阈值状态
+      return {
+        color: 'bg-green-500',
+        textColor: 'text-primary',
+        borderColor: 'border-border/40',
+        bgGradient: 'bg-gradient-to-br from-card to-card/50',
+        glow: 'bg-primary',
+        statusText: 'Live Status',
+        icon: '🏦'
+      }
+    }
+
+    // 阈值判断
+    if (balance <= (thresholds.danger ?? 0)) {
+      return {
+        color: 'bg-red-500',
+        textColor: 'text-red-500',
+        borderColor: 'border-red-500/30',
+        bgGradient: 'bg-red-500/5',
+        glow: 'bg-red-500',
+        statusText: 'Critical Low',
+        icon: '🚨'
+      }
+    } else if (balance <= (thresholds.warning ?? 0)) {
+      return {
+        color: 'bg-yellow-500',
+        textColor: 'text-yellow-500',
+        borderColor: 'border-yellow-500/30',
+        bgGradient: 'bg-yellow-500/5',
+        glow: 'bg-yellow-500',
+        statusText: 'Low Balance',
+        icon: '⚠️'
+      }
+    }
+
+    return {
+      color: 'bg-green-500',
+      textColor: 'text-primary',
+      borderColor: 'border-border/40',
+      bgGradient: 'bg-gradient-to-br from-card to-card/50',
+      glow: 'bg-primary',
+      statusText: 'Healthy',
+      icon: '🏦'
+    }
+  }
 
   // 格式化数字
   const formatNum = (num?: number) => {
@@ -120,102 +170,102 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statuses
           .filter((s) => s.status === 'running' || s.status === 'error')
-          .map((status) => (
-            <div
-              key={status.configId}
-              className={`group relative overflow-hidden rounded-3xl p-6 shadow-2xl transition-all duration-500 hover:scale-[1.03] hover:-translate-y-1 ${
-                status.status === 'error'
-                  ? 'border-2 border-destructive/20 bg-destructive/5'
-                  : 'bg-gradient-to-br from-card to-card/50 border border-border/40'
-              }`}
-            >
-              {/* 装饰性背景 */}
-              <div
-                className={`absolute -right-8 -top-8 h-32 w-32 rounded-full blur-[60px] opacity-20 transition-all group-hover:opacity-40 ${status.status === 'error' ? 'bg-destructive' : 'bg-primary'}`}
-              ></div>
+          .map((status) => {
+            const config = getConfig(status.configId)
+            const styleInfo = getStatusInfo(status, config)
 
-              <div className="relative z-10 flex flex-col h-full">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span
-                        className={`h-2 w-2 rounded-full ${status.status === 'error' ? 'bg-destructive animate-pulse' : 'bg-green-500'}`}
-                      ></span>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                        {status.status === 'error' ? 'Service Error' : 'Live Status'}
+            return (
+              <div
+                key={status.configId}
+                className={`group relative overflow-hidden rounded-3xl p-6 shadow-2xl transition-all duration-500 hover:scale-[1.03] hover:-translate-y-1 border ${styleInfo.borderColor} ${styleInfo.bgGradient}`}
+              >
+                {/* 装饰性背景 */}
+                <div
+                  className={`absolute -right-8 -top-8 h-32 w-32 rounded-full blur-[60px] opacity-20 transition-all group-hover:opacity-40 ${styleInfo.glow}`}
+                ></div>
+
+                <div className="relative z-10 flex flex-col h-full">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span
+                          className={`h-2 w-2 rounded-full ${styleInfo.color} ${status.status === 'error' ? 'animate-pulse' : ''}`}
+                        ></span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                          {styleInfo.statusText}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-black tracking-tight truncate pr-4 text-foreground">
+                        {config?.name || '未知服务'}
+                      </h3>
+                    </div>
+                    <div
+                      className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-xl shadow-inner ${status.status === 'error'
+                          ? 'bg-destructive/10 text-destructive'
+                          : 'bg-primary/10 text-primary'
+                        }`}
+                    >
+                      {styleInfo.icon}
+                    </div>
+                  </div>
+
+                  <div className="flex-1 flex flex-col justify-center py-4">
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <span className={`text-3xl font-black tracking-tighter ${styleInfo.textColor}`}>
+                        {status.balance !== undefined
+                          ? formatNum(status.balance)
+                          : status.status === 'error'
+                            ? '---'
+                            : '同步中...'}
+                      </span>
+                      <span className="text-sm font-black text-muted-foreground opacity-60 uppercase">
+                        {status.currency || config?.thresholds?.currency || '¥'}
                       </span>
                     </div>
-                    <h3 className="text-lg font-black tracking-tight truncate pr-4 text-foreground">
-                      {getConfigName(status.configId)}
-                    </h3>
-                  </div>
-                  <div
-                    className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-xl shadow-inner ${
-                      status.status === 'error'
-                        ? 'bg-destructive/10 text-destructive'
-                        : 'bg-primary/10 text-primary'
-                    }`}
-                  >
-                    {status.status === 'error' ? '⚠️' : '🏦'}
-                  </div>
-                </div>
 
-                <div className="flex-1 flex flex-col justify-center py-4">
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-3xl font-black tracking-tighter text-foreground">
-                      {status.balance !== undefined
-                        ? formatNum(status.balance)
-                        : status.status === 'error'
-                          ? '---'
-                          : '同步中...'}
-                    </span>
-                    <span className="text-sm font-black text-muted-foreground opacity-60 uppercase">
-                      {status.currency || '¥'}
-                    </span>
+                    {/* 深层详细余额 (DeepSeek 等支持详情的模板) */}
+                    {(status.grantedBalance !== undefined ||
+                      status.toppedUpBalance !== undefined) && (
+                        <div className="mt-4 grid grid-cols-2 gap-3 p-3 rounded-2xl bg-muted/30 border border-border/20">
+                          <div>
+                            <p className="text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">
+                              充值余额
+                            </p>
+                            <p className="text-xs font-black text-foreground/80">
+                              {formatNum(status.toppedUpBalance) || '0.00'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">
+                              赠送余额
+                            </p>
+                            <p className="text-xs font-black text-foreground/80">
+                              {formatNum(status.grantedBalance) || '0.00'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                   </div>
 
-                  {/* 深层详细余额 (DeepSeek 等支持详情的模板) */}
-                  {(status.grantedBalance !== undefined ||
-                    status.toppedUpBalance !== undefined) && (
-                    <div className="mt-4 grid grid-cols-2 gap-3 p-3 rounded-2xl bg-muted/30 border border-border/20">
-                      <div>
-                        <p className="text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">
-                          充值余额
-                        </p>
-                        <p className="text-xs font-black text-foreground/80">
-                          {formatNum(status.toppedUpBalance) || '0.00'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">
-                          赠送余额
-                        </p>
-                        <p className="text-xs font-black text-foreground/80">
-                          {formatNum(status.grantedBalance) || '0.00'}
-                        </p>
-                      </div>
+                  <div className="mt-6 flex items-center justify-between pt-4 border-t border-border/40">
+                    <div className="flex flex-col">
+                      <span className="text-[8px] uppercase font-black text-muted-foreground/40 mb-1">
+                        Last Updated
+                      </span>
+                      <span className="text-[10px] font-bold opacity-80">
+                        {status.lastRun ? new Date(status.lastRun).toLocaleTimeString() : '从未'}
+                      </span>
                     </div>
-                  )}
-                </div>
-
-                <div className="mt-6 flex items-center justify-between pt-4 border-t border-border/40">
-                  <div className="flex flex-col">
-                    <span className="text-[8px] uppercase font-black text-muted-foreground/40 mb-1">
-                      Last Updated
-                    </span>
-                    <span className="text-[10px] font-bold opacity-80">
-                      {status.lastRun ? new Date(status.lastRun).toLocaleTimeString() : '从未'}
-                    </span>
+                    {status.status === 'error' && (
+                      <span className="px-2 py-1 bg-destructive/10 text-destructive text-[9px] font-black rounded-lg uppercase tracking-tight">
+                        Check Config
+                      </span>
+                    )}
                   </div>
-                  {status.status === 'error' && (
-                    <span className="px-2 py-1 bg-destructive/10 text-destructive text-[9px] font-black rounded-lg uppercase tracking-tight">
-                      Fault Detected
-                    </span>
-                  )}
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
 
         {/* 空状态处理 */}
         {statuses.filter((s) => s.status === 'running' || s.status === 'error').length === 0 && (

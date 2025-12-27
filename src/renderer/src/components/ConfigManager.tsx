@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { BalanceMonitorConfig } from '../types'
+import { ConfirmModal } from './ConfirmModal'
 
 interface ConfigManagerProps {
   configs: BalanceMonitorConfig[]
@@ -25,18 +26,40 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({
   loading = false
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean
+    configId: string | null
+    configName: string
+  }>({
+    isOpen: false,
+    configId: null,
+    configName: ''
+  })
 
-  const handleDelete = async (configId: string) => {
-    if (!confirm('确定要删除这个配置吗？此操作不可恢复。')) {
-      return
-    }
+  const handleDeleteClick = (config: BalanceMonitorConfig) => {
+    setConfirmModal({
+      isOpen: true,
+      configId: config.id,
+      configName: config.name
+    })
+  }
 
+  const handleConfirmDelete = async () => {
+    if (!confirmModal.configId) return
+
+    const configId = confirmModal.configId
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }))
     setDeletingId(configId)
+
     try {
       await onDeleteConfig(configId)
     } finally {
       setDeletingId(null)
     }
+  }
+
+  const handleCancelDelete = () => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }))
   }
 
   const handleToggle = async (configId: string, currentStatus: boolean) => {
@@ -189,7 +212,7 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({
                     </button>
                   </div>
                   <button
-                    onClick={() => handleDelete(config.id)}
+                    onClick={() => handleDeleteClick(config)}
                     disabled={loading || deletingId === config.id}
                     className="p-2 hover:bg-destructive/10 text-destructive rounded-xl transition-all disabled:opacity-30"
                     title="删除"
@@ -250,6 +273,17 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title="删除配置确认"
+        description={`您确定要删除 "${confirmModal.configName}" 这个监控配置吗？此操作不可逆，删除后无法恢复。`}
+        confirmText="确认删除"
+        cancelText="取消"
+        isDanger={true}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   )
 }

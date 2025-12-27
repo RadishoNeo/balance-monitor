@@ -135,6 +135,11 @@ export class MonitorScheduler {
       return { success: false, message: '配置不存在' }
     }
 
+    // 如果已经在运行，先停止
+    if (this.timers.has(configId)) {
+      this.stopMonitor(configId)
+    }
+
     // 验证配置
     const validation = this.configManager.validateConfig(config)
     if (!validation.valid) {

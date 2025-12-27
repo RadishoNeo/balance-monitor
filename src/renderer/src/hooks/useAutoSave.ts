@@ -8,16 +8,18 @@ interface AutoSaveOptions {
 }
 
 export function useAutoSave({ delay = 1000, onSave, onError, onSuccess }: AutoSaveOptions) {
-  const [dataToSave, setDataToSave] = useState<any>(null)
+  const [dataToSave, setDataToSave] = useState<any>(undefined)
+  const [hasPendingSave, setHasPendingSave] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
   const triggerSave = useCallback((data?: any) => {
-    setDataToSave(data !== undefined ? data : null)
+    setDataToSave(data)
+    setHasPendingSave(true)
   }, [])
 
   useEffect(() => {
-    if (!dataToSave || isSaving) return
+    if (!hasPendingSave || isSaving) return
 
     // 清除之前的定时器
     if (debounceRef.current) {
@@ -28,13 +30,14 @@ export function useAutoSave({ delay = 1000, onSave, onError, onSuccess }: AutoSa
     debounceRef.current = setTimeout(async () => {
       try {
         setIsSaving(true)
+        setHasPendingSave(false)
         await onSave(dataToSave)
         onSuccess?.()
       } catch (error) {
         onError?.(error instanceof Error ? error : new Error(String(error)))
       } finally {
         setIsSaving(false)
-        setDataToSave(null)
+        setDataToSave(undefined)
       }
     }, delay)
 
@@ -44,7 +47,7 @@ export function useAutoSave({ delay = 1000, onSave, onError, onSuccess }: AutoSa
         clearTimeout(debounceRef.current)
       }
     }
-  }, [dataToSave, delay, isSaving, onError, onSave, onSuccess])
+  }, [dataToSave, delay, isSaving, onError, onSave, onSuccess, hasPendingSave])
 
   return {
     triggerSave,
