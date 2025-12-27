@@ -596,7 +596,10 @@ function App(): React.JSX.Element {
                 </>
               )}
             </div>
-            <div className="text-[10px] text-muted-foreground/40 font-normal">v1.0.0 Alpha</div>
+            <div className="text-[10px] text-muted-foreground/40 font-normal">
+              {' '}
+              v{import.meta.env.PACKAGE_VERSION || '1.0.0'} Alpha
+            </div>
           </div>
         </div>
       </footer>

@@ -21,16 +21,58 @@ const logger = new Logger('Main')
 function createWindow(): void {
   // 创建浏览器窗口
   mainWindow = new BrowserWindow({
-    width: 800, // 调整为更适合配置界面的大小
-    height: 700,
+    width: 1050,
+    height: 850,
+    minWidth: 800,
+    minHeight: 600,
+    icon: icon,
     show: false,
     autoHideMenuBar: true,
+    center: true,
+    skipTaskbar: true,
+    //测试环境
+    ...(process.env.NODE_ENV === 'development' ? {} : {}),
+    //生产环境
+    ...(process.env.NODE_ENV === 'production'
+      ? {
+          //无标题栏
+          titleBarStyle: 'hidden'
+        }
+      : {}),
+    //linux环境配置
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+
+      //----------------------
+      //推荐添加的webPreferences
+      webviewTag: false, // 禁用webview标签，提高安全性
+      plugins: false, // 禁用插件
+      experimentalFeatures: false, // 禁用实验性功能
+
+      // 性能优化
+      spellcheck: false, // 禁用拼写检查（除非需要）
+      enableWebSQL: false, // 禁用WebSQL
+
+      // 安全增强
+      safeDialogs: true,
+      safeDialogsMessage: 'This is a security check',
+
+      // 图像和字体
+      images: true,
+      textAreasAreResizable: true,
+      webgl: true,
+      //----------------------
+
+      //测试环境允许打开devtool
+      ...(process.env.NODE_ENV === 'development'
+        ? {
+            devTools: true
+          }
+        : {})
     }
   })
 
