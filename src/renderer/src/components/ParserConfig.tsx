@@ -5,10 +5,13 @@ import { useAutoSave } from '@renderer/hooks'
 import { useFormStore, selectParserFormState, selectUpdateParserForm } from '@renderer/store'
 
 interface ParserConfigProps {
-  initialData?: Partial<ParserConfigType> & {
+  initialData?:
+  | (Partial<ParserConfigType> & {
     isAvailablePath?: string
     balanceMappings?: BalanceInfoMapping[]
-  }
+    isPreset?: boolean
+  })
+  | null
   onChange: (data: any) => Promise<void>
   onTest?: (data: any, sampleData: any) => Promise<any>
   loading?: boolean
@@ -47,6 +50,9 @@ export const ParserConfig: React.FC<ParserConfigProps> = ({
 
   // 避免未使用变量警告
   void configId
+
+  // 检测是否为预设配置
+  const isPreset = (initialData as any)?.isPreset || false
 
   // 初始化表单数据
   const [formData, setFormData] = React.useState(() => ({
@@ -183,9 +189,11 @@ export const ParserConfig: React.FC<ParserConfigProps> = ({
   }
 
   const handleTest = async () => {
-    if (!onTest || !sampleData) {
-      toast.error('请先提供测试数据')
-      return
+    if (!onTest) return
+
+    // 如果没有测试数据且不是加载中，弹出提示
+    if (!sampleData && !loading) {
+      toast.loading('正在获取 API 数据并测试解析器...', { id: 'test-parser-loading' })
     }
 
     try {
@@ -193,18 +201,21 @@ export const ParserConfig: React.FC<ParserConfigProps> = ({
         ...(showCustom
           ? { customParser: formData.customParser }
           : {
-              isAvailablePath: formData.isAvailablePath,
-              balanceMappings: formData.balanceMappings
-            })
+            isAvailablePath: formData.isAvailablePath,
+            balanceMappings: formData.balanceMappings
+          })
       }
-      const result = await onTest(testData, sampleData)
-      if (result?.success && result?.result) {
+      // 将 sampleData 作为第一个参数，配置 (testData) 作为第二个参数，以匹配 App.tsx 的 handleTestParser
+      const result = await onTest(sampleData, testData)
+      toast.dismiss('test-parser-loading')
+      //{"success":true,"message":"解析成功","data":{"is_available":true,"balance_infos":[{"currency":"CNY","total_balance":"44.35","granted_balance":"0.00","topped_up_balance":"44.35"}]},"parsed":{"balance":44.35,"grantedBalance":0,"toppedUpBalance":44.35,"currency":"CNY","isAvailable":true,"raw":{"is_available":true,"balance_infos":[{"currency":"CNY","total_balance":"44.35","granted_balance":"0.00","topped_up_balance":"44.35"}]}}}'
+      if (result?.success && result?.data) {
         toast.success('解析器测试成功')
-        console.log('解析结果:', result.result)
       } else {
         toast.error(result?.error || '解析失败')
       }
     } catch (err) {
+      toast.dismiss('test-parser-loading')
       toast.error(err instanceof Error ? err.message : '测试失败')
     }
   }
@@ -247,6 +258,21 @@ ${JSON.stringify(sampleData, null, 2)}
         {isSaving && <span className="text-primary italic">保存中...</span>}
       </div>
 
+      {/* 预设配置提示 */}
+      {isPreset && (
+        <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">✅</span>
+            <div className="flex-1">
+              <h4 className="font-bold text-primary mb-1">使用预设模板配置</h4>
+              <p className="text-sm text-foreground/80">
+                解析器已根据服务提供商自动配置，无需手动设置。您可以直接进行测试或启动监控。
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 解析模式选择 */}
       <div className="space-y-3">
         <label className="block text-sm font-bold text-foreground ml-1">解析模式</label>
@@ -254,11 +280,10 @@ ${JSON.stringify(sampleData, null, 2)}
           <button
             type="button"
             onClick={() => toggleCustom(false)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold transition-all duration-200 rounded-lg ${
-              !showCustom
-                ? 'bg-primary text-primary-foreground shadow-sm scale-105'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold transition-all duration-200 rounded-lg ${!showCustom
+              ? 'bg-primary text-primary-foreground shadow-sm scale-105'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
           >
             <span className="text-base">📋</span>
             字段映射
@@ -266,11 +291,10 @@ ${JSON.stringify(sampleData, null, 2)}
           <button
             type="button"
             onClick={() => toggleCustom(true)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold transition-all duration-200 rounded-lg ${
-              showCustom
-                ? 'bg-primary text-primary-foreground shadow-sm scale-105'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold transition-all duration-200 rounded-lg ${showCustom
+              ? 'bg-primary text-primary-foreground shadow-sm scale-105'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
           >
             <span className="text-base">💻</span>
             自定义解析器
@@ -452,10 +476,10 @@ return result;`}
           <button
             type="button"
             onClick={handleTest}
-            disabled={loading || !sampleData}
-            className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 disabled:opacity-50"
+            disabled={loading}
+            className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 disabled:opacity-50 font-bold transition-all"
           >
-            测试解析
+            {loading ? '正在获取并解析...' : sampleData ? '测试解析' : '请求并测试解析'}
           </button>
         </div>
       )}

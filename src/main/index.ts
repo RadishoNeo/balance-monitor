@@ -136,11 +136,19 @@ function setupIPCHandlers(): void {
   // 配置管理
   ipcMain.handle('save-config', async (_event, config) => {
     try {
+      let savedConfig
       if (config.id) {
-        return configManager?.updateConfig(config.id, config)
+        savedConfig = configManager?.updateConfig(config.id, config)
       } else {
-        return configManager?.createConfig(config)
+        savedConfig = configManager?.createConfig(config)
       }
+
+      // 如果配置已启用，自动启动显示
+      if (savedConfig && savedConfig.monitoring?.enabled && monitorScheduler) {
+        monitorScheduler.startMonitor(savedConfig.id)
+      }
+
+      return savedConfig
     } catch (error) {
       logger.error(`保存配置失败: ${error}`)
       throw error
@@ -272,9 +280,13 @@ app.whenReady().then(() => {
   // 创建主窗口
   createWindow()
 
-  // 更新窗口引用到调度器
+  // 更新窗口引用到调度器并启动已启用的监控
   if (monitorScheduler && mainWindow) {
     monitorScheduler.setMainWindow(mainWindow)
+    // 延迟一小段时间启动，确保 IPC 通道各就各位
+    setTimeout(() => {
+      monitorScheduler?.startAllMonitors()
+    }, 1000)
   }
 
   // macOS特定处理

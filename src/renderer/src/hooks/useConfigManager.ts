@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { BalanceMonitorConfig, ConfigFormState } from '../types'
 import { useElectronAPI } from './useElectronAPI'
 
@@ -136,6 +136,25 @@ export const useConfigManager = () => {
     [api, loadConfigs]
   )
 
+  // 切换监控状态
+  const toggleMonitoring = useCallback(
+    async (configId: string, enabled: boolean) => {
+      const config = configs.find((c) => c.id === configId)
+      if (!config) return false
+
+      const updatedConfig = {
+        ...config,
+        monitoring: {
+          ...config.monitoring,
+          enabled
+        }
+      }
+
+      return await saveConfig(updatedConfig)
+    },
+    [configs, saveConfig]
+  )
+
   // 验证配置
   const validateConfig = useCallback(
     async (config: any) => {
@@ -151,7 +170,7 @@ export const useConfigManager = () => {
   )
 
   // 获取活动配置
-  const getActiveConfig = useCallback(() => {
+  const activeConfig = useMemo(() => {
     return configs.find((c) => c.id === activeConfigId) || null
   }, [configs, activeConfigId])
 
@@ -222,21 +241,41 @@ export const useConfigManager = () => {
     loadConfigs()
   }, [loadConfigs])
 
-  return {
-    configs,
-    activeConfigId,
-    activeConfig: getActiveConfig(),
-    loading,
-    error,
-    loadConfigs,
-    saveConfig,
-    deleteConfig,
-    setActiveConfig,
-    exportConfig,
-    importConfig,
-    validateConfig,
-    toFormState,
-    fromFormState,
-    clearError: () => setError(null)
-  }
+  return useMemo(
+    () => ({
+      configs,
+      activeConfigId,
+      activeConfig,
+      loading,
+      error,
+      loadConfigs,
+      saveConfig,
+      toggleMonitoring,
+      deleteConfig,
+      setActiveConfig,
+      exportConfig,
+      importConfig,
+      validateConfig,
+      toFormState,
+      fromFormState,
+      clearError: () => setError(null)
+    }),
+    [
+      configs,
+      activeConfigId,
+      activeConfig,
+      loading,
+      error,
+      loadConfigs,
+      saveConfig,
+      toggleMonitoring,
+      deleteConfig,
+      setActiveConfig,
+      exportConfig,
+      importConfig,
+      validateConfig,
+      toFormState,
+      fromFormState
+    ]
+  )
 }

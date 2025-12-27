@@ -5,6 +5,7 @@ export interface APIRequest {
   url: string
   method: 'GET' | 'POST'
   headers: Array<{ key: string; value: string }>
+  auth?: any
   body?: string
   timeout?: number
 }
@@ -46,7 +47,7 @@ export class APIEngine {
       const requestOptions: any = {
         url: request.url,
         method: request.method,
-        headers: this.buildHeaders(request.headers)
+        headers: this.buildHeaders(request.headers, request.auth)
       }
 
       if (request.body && request.method === 'POST') {
@@ -128,17 +129,39 @@ export class APIEngine {
     })
   }
 
-  private buildHeaders(headers: Array<{ key: string; value: string }>): Record<string, string> {
+  private buildHeaders(headers: any[], auth?: any): Record<string, string> {
     const result: Record<string, string> = {
       'Content-Type': 'application/json',
       'User-Agent': 'BalanceMonitor/1.0'
     }
 
-    headers.forEach((header) => {
-      if (header.key && header.value) {
-        result[header.key] = header.value
+    // 1. 处理常规 Headers
+    if (Array.isArray(headers)) {
+      headers.forEach((header) => {
+        if (header.key && header.value) {
+          result[header.key] = header.value
+        }
+      })
+    }
+
+    // 2. 处理 Auth 配置 (DeepSeek, Moonshot 等模板使用)
+    if (auth && auth.apiKey) {
+      const headerKey = auth.headerKey || 'Authorization'
+      if (auth.type === 'Bearer') {
+        result[headerKey] = `Bearer ${auth.apiKey}`
+      } else if (auth.type === 'Basic') {
+        // 如果已经是 base64 或者是 raw username:password
+        if (!auth.apiKey.includes(':') && /^[A-Za-z0-9+/=]+$/.test(auth.apiKey)) {
+          result[headerKey] = `Basic ${auth.apiKey}`
+        } else {
+          const encoded = Buffer.from(auth.apiKey).toString('base64')
+          result[headerKey] = `Basic ${encoded}`
+        }
+      } else {
+        // Custom 或其他情况直接设置
+        result[headerKey] = auth.apiKey
       }
-    })
+    }
 
     return result
   }

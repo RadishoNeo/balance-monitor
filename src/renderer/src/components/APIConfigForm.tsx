@@ -61,12 +61,22 @@ export const APIConfigForm: React.FC<APIConfigFormProps> = ({
           type: template.auth.type,
           apiKey: '', // API密钥不复制
           headerKey: template.auth.headerKey || 'Authorization'
-        }
+        },
+        timeout: template.timeout || 10000,
+        body: template.body || ''
       }
       setFormData(newData)
-      // 立即保存
-      triggerSave(newData)
-      console.log(`已加载 ${template.name} 配置模板`)
+
+      // 立即保存，包含完整的模板配置（parser、monitoring、thresholds）
+      const fullConfig = {
+        ...newData,
+        parser: template.parser,
+        monitoring: template.monitoring,
+        thresholds: template.thresholds,
+        isPreset: template.isPreset
+      }
+      triggerSave(fullConfig)
+      toast.success(`已加载 ${template.name} 配置模板，请填写 API Key`)
     }
   }
 
@@ -116,6 +126,8 @@ export const APIConfigForm: React.FC<APIConfigFormProps> = ({
     }
   }
 
+  // 只在 configId 变化时重置表单（切换到不同的配置）
+  // 不依赖 initialData，避免每次保存后 initialData 引用变化导致表单重置
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -131,7 +143,8 @@ export const APIConfigForm: React.FC<APIConfigFormProps> = ({
         body: initialData.body || ''
       })
     }
-  }, [configId, initialData]) // 当 configId 或 initialData 变化时重新加载数据
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configId]) // 只在 configId 变化时重新加载数据
 
   return (
     <div className="space-y-4 group">

@@ -10,18 +10,18 @@ interface ConfigManagerProps {
   onSetActiveConfig: (configId: string) => Promise<void>
   onExportConfig: (configId: string) => Promise<void>
   onImportConfig: () => Promise<void>
+  onToggleMonitoring: (configId: string, enabled: boolean) => Promise<void>
   loading?: boolean
 }
 
 export const ConfigManager: React.FC<ConfigManagerProps> = ({
   configs,
-  activeConfigId,
   onNewConfig,
   onEditConfig,
   onDeleteConfig,
-  onSetActiveConfig,
   onExportConfig,
   onImportConfig,
+  onToggleMonitoring,
   loading = false
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -39,9 +39,8 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({
     }
   }
 
-  const handleSetActive = async (configId: string) => {
-    if (activeConfigId === configId) return
-    await onSetActiveConfig(configId)
+  const handleToggle = async (configId: string, currentStatus: boolean) => {
+    await onToggleMonitoring(configId, !currentStatus)
   }
 
   const handleExport = async (configId: string): Promise<void> => {
@@ -61,7 +60,7 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({
   return (
     <div className="space-y-6">
       {/* 工具栏 - 现代化布局 */}
-      <div className="flex justify-between items-center bg-card/30 backdrop-blur-sm p-4 rounded-3xl border border-border/50 shadow-sm">
+      <div className="flex flex-wrap justify-between items-center bg-card/30 backdrop-blur-sm p-4 rounded-3xl border border-border/50 shadow-sm gap-4">
         <div className="flex items-center gap-3">
           <button
             onClick={onNewConfig}
@@ -99,33 +98,36 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({
           {configs.map((config) => (
             <div
               key={config.id}
-              className={`relative group rounded-[2rem] p-6 transition-all duration-300 border ${
-                activeConfigId === config.id
-                  ? 'bg-card border-primary ring-4 ring-primary/5 shadow-2xl shadow-primary/10'
-                  : 'bg-card/40 border-border/50 hover:border-primary/30 hover:bg-card/80 hover:shadow-xl hover:shadow-black/5'
-              }`}
+              className="relative group rounded-4xl p-6 transition-all duration-300 border bg-card/40 border-border/50 hover:border-primary/30 hover:bg-card/80 hover:shadow-xl hover:shadow-black/5"
             >
-              {/* 活动状态标识 */}
-              {activeConfigId === config.id && (
-                <div className="absolute top-4 right-4 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg shadow-primary/30 animate-in fade-in zoom-in duration-500">
-                  Active Service
-                </div>
-              )}
-
               <div className="flex flex-col h-full">
-                <div className="flex items-center gap-3 mb-4">
-                  <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${activeConfigId === config.id ? 'bg-primary/10' : 'bg-muted'}`}
-                  >
-                    {config.monitoring.enabled ? '🟢' : '⚪'}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${config.monitoring.enabled ? 'bg-primary/10' : 'bg-muted'}`}>
+                      {config.monitoring.enabled ? '🟢' : '⚪'}
+                    </div>
+                    <div>
+                      <h3 className="font-black text-lg text-foreground group-hover:text-primary transition-colors leading-none mb-1">
+                        {config.name}
+                      </h3>
+                      <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">
+                        ID: {config.id.substring(0, 8)}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-black text-lg text-foreground group-hover:text-primary transition-colors leading-none mb-1">
-                      {config.name}
-                    </h3>
-                    <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">
-                      ID: {config.id.substring(0, 8)}
-                    </p>
+
+                  {/* 现代化切换开关 */}
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[8px] font-black uppercase text-muted-foreground/40 tracking-widest">Monitor</span>
+                    <button
+                      onClick={() => handleToggle(config.id, config.monitoring.enabled)}
+                      disabled={loading}
+                      className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full transition-colors duration-200 focus:outline-none ${config.monitoring.enabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-y-1 ${config.monitoring.enabled ? 'translate-x-6' : 'translate-x-1'}`}
+                      />
+                    </button>
                   </div>
                 </div>
 
@@ -165,14 +167,6 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({
 
                 <div className="flex items-center justify-between gap-2 pt-4 border-t border-border/30">
                   <div className="flex gap-1">
-                    <button
-                      onClick={() => handleSetActive(config.id)}
-                      disabled={loading || activeConfigId === config.id}
-                      className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all disabled:opacity-30"
-                      title="设为活动"
-                    >
-                      🎯
-                    </button>
                     <button
                       onClick={() => onEditConfig(config)}
                       disabled={loading}
@@ -217,36 +211,36 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({
           <div className="flex gap-3 items-start">
             <div className="p-2 bg-primary/10 rounded-lg text-primary text-sm">01</div>
             <div>
-              <p className="text-[11px] font-bold text-foreground/80 mb-0.5">激活服务</p>
+              <p className="text-[11px] font-bold text-foreground/80 mb-0.5">即刻同步</p>
               <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
-                创建配置后，务必点击“🎯 设为活动”方可启动实时背景同步。
+                在“监控设置”中开启启用开关后，系统将自动开始追踪该服务的余额。
               </p>
             </div>
           </div>
           <div className="flex gap-3 items-start">
             <div className="p-2 bg-primary/10 rounded-lg text-primary text-sm">02</div>
             <div>
-              <p className="text-[11px] font-bold text-foreground/80 mb-0.5">安全迁出</p>
+              <p className="text-[11px] font-bold text-foreground/80 mb-0.5">多路追踪</p>
               <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
-                导出的配置已包含加密后的关键信息，可安全用于跨端同步。
+                您可以同时配置并开启多个 API 的监控，仪表盘将实时汇聚所有余额。
               </p>
             </div>
           </div>
           <div className="flex gap-3 items-start">
             <div className="p-2 bg-primary/10 rounded-lg text-primary text-sm">03</div>
             <div>
-              <p className="text-[11px] font-bold text-foreground/80 mb-0.5">并行监控</p>
+              <p className="text-[11px] font-bold text-foreground/80 mb-0.5">安全保障</p>
               <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
-                系统支持同时监听多组 API，确保您的服务管道永不中断。
+                导出的配置经过安全加密处理，敏感信息在非本机环境下无法被读取。
               </p>
             </div>
           </div>
           <div className="flex gap-3 items-start">
             <div className="p-2 bg-primary/10 rounded-lg text-primary text-sm">04</div>
             <div>
-              <p className="text-[11px] font-bold text-foreground/80 mb-0.5">任务栏直达</p>
+              <p className="text-[11px] font-bold text-foreground/80 mb-0.5">异常感知</p>
               <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
-                当前活动配置的实时余额会同步推送到系统状态栏图标。
+                当服务出现异常或余额低于阈值时，系统会通过托盘图标变红给予告警。
               </p>
             </div>
           </div>

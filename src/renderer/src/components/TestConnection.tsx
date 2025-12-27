@@ -70,7 +70,7 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
       if (parseResult.success && parseResult.result) {
         toast.success('解析成功')
       } else {
-        toast.error(parseResult.error || '解析失败')
+        toast.error(parseResult.error || '解析失败2')
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '解析测试失败')
@@ -89,11 +89,10 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
       <div className="flex justify-between items-center bg-muted/30 p-2 rounded-2xl">
         <div className="flex gap-2">
           <div
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
-              step >= 1
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${step >= 1
                 ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105'
                 : 'bg-secondary text-secondary-foreground opacity-50'
-            }`}
+              }`}
           >
             <span className="flex items-center justify-center w-5 h-5 bg-white/20 rounded-full text-[10px]">
               1
@@ -101,11 +100,10 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
             API测试
           </div>
           <div
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
-              step >= 2
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${step >= 2
                 ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105'
                 : 'bg-secondary text-secondary-foreground opacity-50'
-            }`}
+              }`}
           >
             <span className="flex items-center justify-center w-5 h-5 bg-white/20 rounded-full text-[10px]">
               2

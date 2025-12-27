@@ -31,24 +31,25 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logs, onClearLogs, onRefre
     }
   }
 
-  // 过滤日志
-  const filteredLogs = logs.filter((log) => {
-    if (filter !== 'all' && log.level !== filter) return false
-    if (
-      search &&
-      !log.message.toLowerCase().includes(search.toLowerCase()) &&
-      !log.module.toLowerCase().includes(search.toLowerCase())
-    )
-      return false
-    return true
-  })
+  // 过滤并排序日志 (倒序，最新在最前)
+  const filteredLogs = [...logs]
+    .reverse()
+    .filter((log) => {
+      if (filter !== 'all' && log.level !== filter) return false
+      if (
+        search &&
+        !log.message.toLowerCase().includes(search.toLowerCase()) &&
+        !log.module.toLowerCase().includes(search.toLowerCase())
+      )
+        return false
+      return true
+    })
 
-  // 自动滚动到底部
+  // 滚动引用 (保留引用以备将来使用，但移除自动滚动到底部的逻辑)
   const scrollRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
+    // 当日志更新时，如果用户在顶部，可以考虑保持在顶部
+    // 倒序排列下，最新日志就在顶部，所以不需要自动跳转到滚动条底部
   }, [filteredLogs])
 
   return (
@@ -62,11 +63,10 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logs, onClearLogs, onRefre
               <button
                 key={l}
                 onClick={() => setFilter(l as any)}
-                className={`px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all duration-300 ${
-                  filter === l
+                className={`px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all duration-300 ${filter === l
                     ? 'bg-card text-primary shadow-lg shadow-black/5 ring-1 ring-border/10 scale-105'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95'
-                }`}
+                  }`}
               >
                 {l}
               </button>

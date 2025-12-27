@@ -74,15 +74,7 @@ function App(): React.JSX.Element {
     }
   }
 
-  // 设置活动配置
-  const handleSetActiveConfig = async (configId: string) => {
-    const success = await configManager.setActiveConfig(configId)
-    if (success) {
-      showNotification('活动配置已设置')
-      // 刷新监控状态以显示在仪表盘
-      await balanceMonitor.loadStatuses()
-    }
-  }
+
 
   // 导出配置
   const handleExportConfig = async (configId: string) => {
@@ -147,7 +139,22 @@ function App(): React.JSX.Element {
 
   // 解析器测试
   const handleTestParser = async (data: any, parserConfig: any) => {
-    return await balanceMonitor.testParser(data, parserConfig)
+    let testData = data
+    if (!testData) {
+      // 如果没有测试数据，尝试从当前的 API 配置中获取
+      const apiState = (await import('./store')).useFormStore.getState().apiFormState
+      if (!apiState.url) {
+        return { success: false, error: '请先在"API配置"标签页中设置 API 地址并填写 API Key' }
+      }
+
+      // 进行一次 API 测试以获取数据
+      const apiResult = await handleTestAPI(apiState)
+      if (!apiResult.success) {
+        return { success: false, error: `无法获取 API 数据: ${apiResult.message || '连接超时'}` }
+      }
+      testData = apiResult.data
+    }
+    return await balanceMonitor.testParser(testData, parserConfig)
   }
 
   // 保存完整配置（分步骤）
@@ -167,8 +174,33 @@ function App(): React.JSX.Element {
     }
 
     // 根据当前标签页合并数据
-    if (activeTab === 'config' && stepData.api) {
-      newConfig.api = stepData.api
+    if (activeTab === 'config') {
+      // APIConfigForm 传递的是扁平结构: { name, url, method, auth, timeout, body }
+      // 需要将这些字段映射到正确的位置
+      if (stepData.name !== undefined) {
+        newConfig.name = stepData.name
+      }
+      newConfig.api = {
+        url: stepData.url,
+        method: stepData.method,
+        auth: stepData.auth,
+        timeout: stepData.timeout,
+        body: stepData.body
+      }
+
+      // 如果是从模板加载的配置，包含完整的 parser、monitoring、thresholds
+      if (stepData.parser) {
+        newConfig.parser = stepData.parser
+      }
+      if (stepData.monitoring) {
+        newConfig.monitoring = stepData.monitoring
+      }
+      if (stepData.thresholds) {
+        newConfig.thresholds = stepData.thresholds
+      }
+      if (stepData.isPreset !== undefined) {
+        newConfig.isPreset = stepData.isPreset
+      }
     } else if (activeTab === 'parser' && stepData.parser) {
       newConfig.parser = stepData.parser
     } else if (activeTab === 'monitoring') {
@@ -230,10 +262,11 @@ function App(): React.JSX.Element {
   // 应用就绪后加载数据
   useEffect(() => {
     if (appReady && api) {
+      // 这里的 configManager.loadConfigs 已经 memoized
       configManager.loadConfigs()
       loadLogs()
     }
-  }, [appReady, api, configManager, loadLogs])
+  }, [appReady, api, configManager.loadConfigs, loadLogs])
 
   // 显示错误或警告 toast
   useEffect(() => {
@@ -255,9 +288,8 @@ function App(): React.JSX.Element {
         return (
           <StatusPanel
             statuses={balanceMonitor.statuses}
+            configs={configManager.configs}
             isMonitoring={balanceMonitor.isMonitoring}
-            lastBalance={balanceMonitor.lastBalance}
-            lastCurrency={balanceMonitor.lastCurrency}
             onManualQuery={handleManualQuery}
             onStart={handleStartMonitoring}
             onStop={handleStopMonitoring}
@@ -358,8 +390,8 @@ function App(): React.JSX.Element {
                       key={tab.key}
                       onClick={() => handleTabSwitch(tab.key as any)}
                       className={`flex items-center gap-2.5 px-6 py-2.5 text-sm font-bold transition-all duration-300 rounded-xl ${activeTab === tab.key
-                          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 select-none'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
+                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 select-none'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
                         }`}
                     >
                       <span className="text-lg">{tab.icon}</span>
@@ -385,7 +417,10 @@ function App(): React.JSX.Element {
 
                 {activeTab === 'parser' && (
                   <ParserConfig
-                    initialData={editingConfig?.parser}
+                    initialData={{
+                      ...editingConfig?.parser,
+                      isPreset: editingConfig?.isPreset
+                    }}
                     onChange={async (parserData) => {
                       // 处理新的解析器数据结构
                       if (editingConfig) {
@@ -429,13 +464,16 @@ function App(): React.JSX.Element {
           return (
             <ConfigManager
               configs={configManager.configs}
-              activeConfigId={configManager.activeConfigId}
+              activeConfigId={null}
               onNewConfig={handleNewConfig}
               onEditConfig={handleEditConfig}
               onDeleteConfig={handleDeleteConfig}
-              onSetActiveConfig={handleSetActiveConfig}
+              onSetActiveConfig={async () => { }}
               onExportConfig={handleExportConfig}
               onImportConfig={handleImportConfig}
+              onToggleMonitoring={async (id, enabled) => {
+                await configManager.toggleMonitoring(id, enabled)
+              }}
               loading={configManager.loading}
             />
           )
@@ -484,8 +522,8 @@ function App(): React.JSX.Element {
                   key={item.key}
                   onClick={() => setCurrentPage(item.key as PageType)}
                   className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${currentPage === item.key
-                      ? 'bg-card text-primary shadow-lg shadow-black/5 ring-1 ring-border/10 scale-105'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
+                    ? 'bg-card text-primary shadow-lg shadow-black/5 ring-1 ring-border/10 scale-105'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
                     }`}
                 >
                   <span className="text-lg">{item.icon}</span>
@@ -509,15 +547,15 @@ function App(): React.JSX.Element {
             <div className="flex items-center gap-3">
               <span className="p-1.5 rounded-lg bg-muted text-lg">📁</span>
               <div className="flex flex-col">
-                <span className="text-[8px] opacity-40 mb-1">Active Profile</span>
-                {configManager.activeConfig ? (
+                <span className="text-[8px] opacity-40 mb-1">Monitoring Status</span>
+                {configManager.configs.filter(c => c.monitoring.enabled).length > 0 ? (
                   <span className="text-foreground">
-                    <span className="text-primary">{configManager.activeConfig.name}</span>
+                    TRACKING <span className="text-primary">{configManager.configs.filter(c => c.monitoring.enabled).length}</span> SERVICES
                   </span>
                 ) : (
                   <span className="text-destructive animate-pulse flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-destructive mr-1"></span>
-                    未设置活动配置
+                    未启用任何监控任务
                   </span>
                 )}
               </div>
@@ -535,7 +573,7 @@ function App(): React.JSX.Element {
                 </>
               ) : (
                 <>
-                  <span className="h-2 w-2 rounded-full bg-muted-foreground/50"></span>
+                  <span className="h-2 w-2 rounded-full bg-green-500"></span>
                   <span className="text-muted-foreground">STANDBY</span>
                 </>
               )}

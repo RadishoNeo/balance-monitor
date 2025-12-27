@@ -12,6 +12,10 @@ export interface MonitorStatus {
   nextRun: string | null
   errorCount: number
   successCount: number
+  balance?: number
+  currency?: string
+  grantedBalance?: number
+  toppedUpBalance?: number
 }
 
 export class MonitorScheduler {
@@ -137,19 +141,31 @@ export class MonitorScheduler {
       return { success: false, message: `配置无效: ${validation.errors.join(', ')}` }
     }
 
-    // 如果已存在，先停止
-    if (this.timers.has(configId)) {
-      this.stopMonitor(configId)
+    // 1. 初始化/更新状态
+    let status = this.statuses.get(configId)
+    if (!status) {
+      status = {
+        configId,
+        status: 'running',
+        lastRun: null,
+        nextRun: null,
+        errorCount: 0,
+        successCount: 0
+      }
+    } else {
+      status.status = 'running'
     }
+    this.statuses.set(configId, status)
+    this.notifyUI('status-change', status)
 
-    // 立即执行一次
+    // 2. 立即执行一次
     try {
       await this.executeMonitor(config)
     } catch (error) {
       this.logger.error(`初始查询失败: ${error}`)
     }
 
-    // 设置定时器
+    // 3. 设置定时器
     const interval = config.monitoring.interval * 1000
     const timer = setInterval(async () => {
       try {
@@ -161,19 +177,14 @@ export class MonitorScheduler {
 
     this.timers.set(configId, timer)
 
-    // 更新状态
-    const status: MonitorStatus = {
-      configId,
-      status: 'running',
-      lastRun: new Date().toISOString(),
-      nextRun: new Date(Date.now() + interval).toISOString(),
-      errorCount: 0,
-      successCount: 0
+    // 再次更新 nextRun 并通知
+    const currentStatus = this.statuses.get(configId)
+    if (currentStatus) {
+      currentStatus.nextRun = new Date(Date.now() + interval).toISOString()
+      this.notifyUI('status-change', currentStatus)
     }
-    this.statuses.set(configId, status)
 
     this.logger.success(`启动监控: ${config.name} (间隔: ${config.monitoring.interval}s)`)
-    this.notifyUI('status-change', status)
 
     return { success: true, message: '监控已启动' }
   }
@@ -207,7 +218,9 @@ export class MonitorScheduler {
       lastRun: null,
       nextRun: null,
       errorCount: 0,
-      successCount: 0
+      successCount: 0,
+      balance: undefined,
+      currency: undefined
     }
 
     // 更新托盘状态为加载中
@@ -221,6 +234,7 @@ export class MonitorScheduler {
       url: config.api.url,
       method: config.api.method,
       headers: config.api.headers,
+      auth: config.api.auth,
       body: config.api.body,
       timeout: config.api.timeout || 10000
     }
@@ -285,6 +299,10 @@ export class MonitorScheduler {
     status.successCount++
     status.lastRun = new Date().toISOString()
     status.nextRun = new Date(Date.now() + config.monitoring.interval * 1000).toISOString()
+    status.balance = parsed.balance
+    status.currency = parsed.currency
+    status.grantedBalance = parsed.grantedBalance
+    status.toppedUpBalance = parsed.toppedUpBalance
     this.statuses.set(config.id, status)
 
     // 计算状态
@@ -303,7 +321,7 @@ export class MonitorScheduler {
     // 记录成功日志
     this.logger.success(
       `[${config.name}] 余额: ${parsed.currency}${parsed.balance.toFixed(2)} ` +
-        `(响应: ${response.responseTime}ms)`
+      `(响应: ${response.responseTime}ms)`
     )
 
     // 通知UI
@@ -312,6 +330,8 @@ export class MonitorScheduler {
       success: true,
       balance: parsed.balance,
       currency: parsed.currency,
+      grantedBalance: parsed.grantedBalance,
+      toppedUpBalance: parsed.toppedUpBalance,
       isAvailable: parsed.isAvailable,
       responseTime: response.responseTime,
       timestamp: new Date().toISOString()
@@ -320,16 +340,31 @@ export class MonitorScheduler {
 
   // 手动查询
   async manualQuery(): Promise<{ success: boolean; message: string }> {
-    const activeConfig = this.configManager.getActiveConfig()
-    if (!activeConfig) {
-      return { success: false, message: '没有活动配置' }
+    const configIds = Array.from(this.timers.keys())
+    if (configIds.length === 0) {
+      return { success: false, message: '没有正在运行的监控任务' }
     }
 
-    try {
-      await this.executeMonitor(activeConfig)
-      return { success: true, message: '查询完成' }
-    } catch (error) {
-      return { success: false, message: `查询失败: ${error}` }
+    let successCount = 0
+    let failedCount = 0
+
+    const results = await Promise.allSettled(
+      configIds.map(async (id) => {
+        const config = this.configManager.getConfig(id)
+        if (config) {
+          await this.executeMonitor(config)
+        }
+      })
+    )
+
+    results.forEach((r) => {
+      if (r.status === 'fulfilled') successCount++
+      else failedCount++
+    })
+
+    return {
+      success: successCount > 0,
+      message: `手动查询完成: ${successCount} 成功, ${failedCount} 失败`
     }
   }
 

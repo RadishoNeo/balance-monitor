@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { MonitorStatus, APIRequest, ParserConfig, TestResult } from '../types'
 import { useElectronAPI } from './useElectronAPI'
 
@@ -138,7 +138,7 @@ export const useBalanceMonitor = () => {
         } else {
           return {
             success: false,
-            message: result.error || '解析失败'
+            message: result.error || '解析失败2'
           }
         }
       } catch (err) {
@@ -251,21 +251,25 @@ export const useBalanceMonitor = () => {
     const unsubscribe = api.onStatusChange((data: any) => {
       setStatuses((prev) => {
         const index = prev.findIndex((s) => s.configId === data.configId)
+        let nextStatuses
         if (index >= 0) {
-          const updated = [...prev]
-          updated[index] = data
-          return updated
+          nextStatuses = [...prev]
+          // 关键修复：合并状态，防止余额被空字段覆盖
+          nextStatuses[index] = { ...nextStatuses[index], ...data }
+        } else {
+          nextStatuses = [...prev, data]
         }
-        return [...prev, data]
-      })
-      setIsMonitoring(() => {
-        const hasRunning = [...statuses, data].some((s) => s.status === 'running')
-        return hasRunning
+
+        // 自动更新全局监控状态
+        const hasRunning = nextStatuses.some((s) => s.status === 'running')
+        setIsMonitoring(hasRunning)
+
+        return nextStatuses
       })
     })
 
     return unsubscribe
-  }, [api, statuses])
+  }, [api]) // 移除 statuses 依赖，防止重复订阅
 
   // 定期刷新状态
   useEffect(() => {
@@ -276,23 +280,43 @@ export const useBalanceMonitor = () => {
     return () => clearInterval(interval)
   }, [loadStatuses])
 
-  return {
-    statuses,
-    isMonitoring,
-    loading,
-    error,
-    lastBalance,
-    lastCurrency,
-    loadStatuses,
-    startMonitoring,
-    stopMonitoring,
-    manualQuery,
-    testApiConnection,
-    testParser,
-    startConfigMonitor,
-    stopConfigMonitor,
-    getStatusStats,
-    getCurrentBalanceStatus,
-    clearError: () => setError(null)
-  }
+  return useMemo(
+    () => ({
+      statuses,
+      isMonitoring,
+      loading,
+      error,
+      lastBalance,
+      lastCurrency,
+      loadStatuses,
+      startMonitoring,
+      stopMonitoring,
+      manualQuery,
+      testApiConnection,
+      testParser,
+      startConfigMonitor,
+      stopConfigMonitor,
+      getStatusStats,
+      getCurrentBalanceStatus,
+      clearError: () => setError(null)
+    }),
+    [
+      statuses,
+      isMonitoring,
+      loading,
+      error,
+      lastBalance,
+      lastCurrency,
+      loadStatuses,
+      startMonitoring,
+      stopMonitoring,
+      manualQuery,
+      testApiConnection,
+      testParser,
+      startConfigMonitor,
+      stopConfigMonitor,
+      getStatusStats,
+      getCurrentBalanceStatus
+    ]
+  )
 }

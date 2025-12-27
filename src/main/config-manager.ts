@@ -18,12 +18,22 @@ export interface APIConfig {
   headers: Array<{ key: string; value: string; encrypted?: boolean }>
   body?: string
   timeout?: number
+  auth?: any
+}
+
+export interface BalanceInfoMapping {
+  currency: string
+  total_balance: string
+  granted_balance?: string
+  topped_up_balance?: string
 }
 
 export interface ParserConfig {
-  balancePath: string
+  balancePath?: string
   currencyPath?: string
   availablePath?: string
+  isAvailablePath?: string
+  balanceMappings?: BalanceInfoMapping[]
   customParser?: string
 }
 
@@ -161,6 +171,11 @@ export class ConfigManager {
           )
         }
 
+        // 加密 Auth 中的 API Key
+        if (encryptedConfig.api?.auth?.apiKey) {
+          encryptedConfig.api.auth.apiKey = this.encryptValue(encryptedConfig.api.auth.apiKey)
+        }
+
         return encryptedConfig
       })
 
@@ -205,9 +220,9 @@ export class ConfigManager {
     try {
       const files = existsSync(this.backupDir)
         ? readdirSync(this.backupDir).map((f: string) => ({
-            name: f,
-            time: statSync(join(this.backupDir, f)).mtime
-          }))
+          name: f,
+          time: statSync(join(this.backupDir, f)).mtime
+        }))
         : []
 
       if (files.length > 10) {
@@ -344,10 +359,18 @@ export class ConfigManager {
       ) {
         try {
           decrypted.parser.customParser = this.decryptValue(decrypted.parser.customParser)
-        } catch (e) {
-          this.logger.warn(`解密自定义解析器失败: ${e}`)
-          // 可能是明文，保持原样
+        } catch {
+          // 忽略
         }
+      }
+    }
+
+    // 解密 Auth 中的 API Key
+    if (decrypted.api?.auth?.apiKey) {
+      try {
+        decrypted.api.auth.apiKey = this.decryptValue(decrypted.api.auth.apiKey)
+      } catch {
+        // 忽略
       }
     }
 
@@ -379,7 +402,7 @@ export class ConfigManager {
       ...config,
       api: {
         ...config.api,
-        headers: config.api.headers.map((h) => ({
+        headers: (config.api.headers || []).map((h) => ({
           key: h.key,
           value:
             h.key.toLowerCase().includes('authorization') || h.key.toLowerCase().includes('token')
@@ -436,8 +459,12 @@ export class ConfigManager {
       errors.push('请求方法必须是GET或POST')
     }
 
-    if (!config.parser.balancePath || config.parser.balancePath.trim().length === 0) {
-      errors.push('余额解析路径不能为空')
+    const hasBalancePath = config.parser.balancePath && config.parser.balancePath.trim().length > 0
+    const hasMappings = config.parser.balanceMappings && config.parser.balanceMappings.length > 0
+    const hasCustomParser = config.parser.customParser && config.parser.customParser.trim().length > 0
+
+    if (!hasBalancePath && !hasMappings && !hasCustomParser) {
+      errors.push('余额解析规则不能为空（必须配置解析路径、字段映射或自定义脚本）')
     }
 
     if (config.monitoring.interval < 5) {
@@ -461,12 +488,12 @@ export class ConfigManager {
     const lastUpdate =
       configs.length > 0
         ? configs.reduce(
-            (latest, c) => {
-              const time = new Date(c.updatedAt).getTime()
-              return !latest || time > new Date(latest).getTime() ? c.updatedAt : latest
-            },
-            null as string | null
-          )
+          (latest, c) => {
+            const time = new Date(c.updatedAt).getTime()
+            return !latest || time > new Date(latest).getTime() ? c.updatedAt : latest
+          },
+          null as string | null
+        )
         : null
 
     return {

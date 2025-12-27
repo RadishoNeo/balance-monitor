@@ -102,6 +102,8 @@ export interface ParsedBalance {
   balance: number
   currency: string
   isAvailable: boolean
+  grantedBalance?: number
+  toppedUpBalance?: number
   raw?: any
 }
 
@@ -156,6 +158,7 @@ export interface BalanceMonitorConfig {
   createdAt: string
   updatedAt: string
   enabled: boolean
+  isPreset?: boolean // 标识是否为预设配置
   response?: {
     is_available: string
     balance_infos: BalanceInfoMapping[]
@@ -169,6 +172,10 @@ export interface MonitorStatus {
   nextRun: string | null
   errorCount: number
   successCount: number
+  balance?: number
+  currency?: string
+  grantedBalance?: number
+  toppedUpBalance?: number
 }
 
 export interface LogEntry {
