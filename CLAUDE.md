@@ -26,6 +26,7 @@ This is a **Balance Monitor** desktop application built with Electron, React, an
 ### Key Modules
 
 **Main Process Modules:**
+
 - `index.ts`: Entry point, window creation, service initialization
 - `config-manager.ts`: Configuration CRUD operations (create/update/delete/active configs)
 - `monitor-scheduler.ts`: Scheduled monitoring execution, timer management
@@ -35,6 +36,7 @@ This is a **Balance Monitor** desktop application built with Electron, React, an
 - `tray-manager.ts`: System tray icon and context menu
 
 **Renderer Process Modules:**
+
 - React hooks in `src/renderer/src/hooks/`: Custom hooks for Electron API (`useElectronAPI`, `useBalanceMonitor`, `useConfigManager`)
 - Components in `src/renderer/src/components/`: UI components for configuration, monitoring, and testing
 
@@ -90,20 +92,22 @@ src/
 
 ## Configuration Storage
 
-- **Location**: `C:\Users\{USER}\AppData\Roaming\my-app\configs\` (Windows)
-- **File Format**: JSON files for individual configurations
-- **Active Config**: Tracked in `active.json`
+- **Location**: `C:\Users\{USER}\.balance-monitor\` (Windows) or `~/.balance-monitor/` (macOS/Linux)
+- **File Format**: Single encrypted JSON file (`configs.enc.json`) containing all configurations
+- **Active Config**: Tracked in `active.json` within config directory
 - **Auto-backup**: Enabled by default, stores in `backups/` directory
 
 ## IPC Communication Pattern
 
 **Main → Renderer (Events):**
+
 - `balance-update`: New balance data from API
 - `status-change`: Monitor status changes
 - `app-ready`: App initialization complete
 - `navigate-to-config`: Navigate to config UI from tray
 
 **Renderer → Main (IPC Handles):**
+
 - Config management: `save-config`, `load-config`, `delete-config`, etc.
 - Testing: `test-api-connection`, `test-parser`
 - Logs: `get-logs`, `clear-logs`

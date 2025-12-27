@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useConfigManager, useBalanceMonitor, useElectronAPI, useElectronEvents } from './hooks'
-import { BalanceMonitorConfig, PageType } from './types'
+import { BalanceMonitorConfig, PageType, APIRequest } from './types'
+
+import { Toaster, toast } from 'sonner'
 
 // 组件导入
 import { ConfigManager } from './components/ConfigManager'
@@ -23,34 +25,33 @@ function App(): React.JSX.Element {
 
   // UI状态
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard')
-  const [editingConfig, setEditingConfig] = useState<BalanceMonitorConfig | null>(null)
+  const [editingConfig, setEditingConfig] = useState<BalanceMonitorConfig | undefined>(undefined)
   const [showNewConfig, setShowNewConfig] = useState(false)
   const [logs, setLogs] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'config' | 'parser' | 'monitoring' | 'test'>('config')
   const [sampleData, setSampleData] = useState<any>(null)
 
-  // 通知状态
-  const [notification, setNotification] = useState<{
-    message: string
-    type: 'success' | 'error' | 'warning'
-  } | null>(null)
-
   // 加载日志
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     if (!api) return
     const logEntries = await api.getLogs(200)
     setLogs(logEntries)
-  }
+  }, [api])
 
-  // 显示通知
+  // 显示通知（使用 toast）
   const showNotification = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
-    setNotification({ message, type })
-    setTimeout(() => setNotification(null), 3000)
+    if (type === 'error') {
+      toast.error(message)
+    } else if (type === 'warning') {
+      toast.warning(message)
+    } else {
+      toast.success(message)
+    }
   }
 
   // 新建配置
   const handleNewConfig = () => {
-    setEditingConfig(null)
+    setEditingConfig(undefined)
     setShowNewConfig(true)
     setActiveTab('config')
     setCurrentPage('config')
@@ -108,9 +109,35 @@ function App(): React.JSX.Element {
     input.click()
   }
 
-  // API测试
+  // API测试 (适配新的 APIConfigForm 格式)
   const handleTestAPI = async (request: any) => {
-    const result = await balanceMonitor.testApiConnection(request)
+    // 将新的格式转换为旧的 APIRequest 格式
+    const apiRequest: APIRequest = {
+      url: request.url,
+      method: request.method,
+      headers: [],
+      body: request.body,
+      timeout: request.timeout
+    }
+
+    // 添加认证头
+    if (request.auth) {
+      const { type, apiKey, headerKey = 'Authorization' } = request.auth
+      let authValue = ''
+
+      if (type === 'Bearer') {
+        authValue = `Bearer ${apiKey}`
+      } else if (type === 'Basic') {
+        authValue = `Basic ${btoa(apiKey)}`
+      }
+
+      apiRequest.headers.push({
+        key: headerKey,
+        value: authValue
+      })
+    }
+
+    const result = await balanceMonitor.testApiConnection(apiRequest)
     if (result.success) {
       setSampleData(result.data)
     }
@@ -150,10 +177,8 @@ function App(): React.JSX.Element {
 
     const saved = await configManager.saveConfig(newConfig)
     if (saved) {
-      showNotification('配置已保存')
-      if (!editingConfig) {
-        setEditingConfig(saved)
-      }
+      // 确保 editingConfig 更新为最新的配置对象，防止表单重置
+      setEditingConfig(saved)
     }
   }
 
@@ -199,7 +224,7 @@ function App(): React.JSX.Element {
     if (currentPage === 'logs') {
       loadLogs()
     }
-  }, [currentPage])
+  }, [currentPage, loadLogs])
 
   // 应用就绪后加载数据
   useEffect(() => {
@@ -207,7 +232,20 @@ function App(): React.JSX.Element {
       configManager.loadConfigs()
       loadLogs()
     }
-  }, [appReady, api])
+  }, [appReady, api, configManager, loadLogs])
+
+  // 显示错误或警告 toast
+  useEffect(() => {
+    if (configManager.error) {
+      toast.error(configManager.error)
+    }
+  }, [configManager.error])
+
+  useEffect(() => {
+    if (balanceMonitor.error) {
+      toast.error(balanceMonitor.error)
+    }
+  }, [balanceMonitor.error])
 
   // 渲染页面
   const renderPage = () => {
@@ -231,78 +269,138 @@ function App(): React.JSX.Element {
           // 配置编辑界面
           const initialData = editingConfig ? configManager.toFormState(editingConfig) : undefined
 
+          // 准备 APIConfigForm 的初始数据（扁平结构）
+          const apiFormInitialData = editingConfig
+            ? {
+                name: editingConfig.name,
+                url: editingConfig.api?.url || '',
+                method: editingConfig.api?.method || 'GET',
+                auth: editingConfig.api?.auth || {
+                  type: 'Bearer' as const,
+                  apiKey: '',
+                  headerKey: 'Authorization' as const
+                },
+                timeout: editingConfig.api?.timeout || 10000,
+                body: editingConfig.api?.body || ''
+              }
+            : undefined
+
+          // 处理标签页切换（保存当前标签页的数据）
+          const handleTabSwitch = async (newTab: 'config' | 'parser' | 'monitoring' | 'test') => {
+            // 如果切换到不同的标签页，先强制保存当前标签页的数据
+            if (newTab !== activeTab && editingConfig) {
+              // 根据当前标签页重新保存数据，确保数据不丢失
+              if (activeTab === 'config') {
+                // API配置的数据会通过 onChange 自动保存
+              } else if (activeTab === 'parser') {
+                // 解析器数据需要重新保存
+                await handleSaveFullConfig({ parser: editingConfig.parser })
+              } else if (activeTab === 'monitoring') {
+                // 监控设置数据需要重新保存
+                await handleSaveFullConfig({
+                  monitoring: editingConfig.monitoring,
+                  thresholds: editingConfig.thresholds
+                })
+              }
+            }
+            setActiveTab(newTab)
+          }
+
           return (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold">{editingConfig ? '编辑配置' : '新建配置'}</h2>
-                <button
-                  onClick={() => {
-                    setShowNewConfig(false)
-                    setEditingConfig(null)
-                  }}
-                  className="text-gray-600 hover:text-gray-800 text-sm"
-                >
-                  返回列表
-                </button>
-              </div>
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* 顶部工具栏 - 现代化 Header */}
+              <div className="flex flex-col gap-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        setShowNewConfig(false)
+                        setEditingConfig(undefined)
+                      }}
+                      className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-all"
+                      title="返回列表"
+                    >
+                      <span className="text-xl">←</span>
+                    </button>
+                    <div>
+                      <h2 className="text-xl font-bold text-foreground">
+                        {editingConfig?.id ? '编辑配置' : '新建配置'}
+                      </h2>
+                      <p className="text-xs text-muted-foreground">配置您的服务监控参数</p>
+                    </div>
+                  </div>
+                </div>
 
-              {/* 配置名称 */}
-              <div>
-                <label className="block text-sm font-medium mb-1">配置名称</label>
-                <input
-                  type="text"
-                  defaultValue={editingConfig?.name}
-                  id="config-name-input"
-                  placeholder="我的余额监控"
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+                {/* 配置名称集成的输入框 */}
+                <div className="bg-card/50 p-4 rounded-xl border border-border/50 shadow-sm">
+                  <label className="block text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1 ml-1">
+                    配置名称
+                  </label>
+                  <input
+                    type="text"
+                    defaultValue={editingConfig?.name}
+                    id="config-name-input"
+                    placeholder="例如: DeepSeek 官方 API"
+                    className="w-full bg-transparent text-lg font-bold text-foreground focus:outline-none border-b border-transparent focus:border-primary/50 px-1 py-1 transition-all placeholder:text-muted-foreground/30"
+                  />
+                </div>
 
-              {/* 标签页 */}
-              <div className="border-b border-gray-200">
-                <nav className="flex gap-4">
+                {/* 现代化标签页 (Segmented Control 风格) */}
+                <div className="flex items-center gap-2 bg-muted/30 p-2 rounded-2xl self-start">
                   {[
-                    { key: 'config', label: 'API配置' },
-                    { key: 'parser', label: '解析器' },
-                    { key: 'monitoring', label: '监控设置' },
-                    { key: 'test', label: '测试' }
+                    { key: 'config', label: 'API配置', icon: '🔗' },
+                    { key: 'parser', label: '解析器', icon: '🔍' },
+                    { key: 'monitoring', label: '监控设置', icon: '🔔' },
+                    { key: 'test', label: '测试', icon: '🧪' }
                   ].map((tab) => (
                     <button
                       key={tab.key}
-                      onClick={() => setActiveTab(tab.key as any)}
-                      className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === tab.key
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-600 hover:text-gray-800'
-                        }`}
+                      onClick={() => handleTabSwitch(tab.key as any)}
+                      className={`flex items-center gap-2.5 px-6 py-2.5 text-sm font-bold transition-all duration-300 rounded-xl ${
+                        activeTab === tab.key
+                          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 select-none'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
+                      }`}
                     >
+                      <span className="text-lg">{tab.icon}</span>
                       {tab.label}
                     </button>
                   ))}
-                </nav>
+                </div>
               </div>
 
               {/* 标签页内容 */}
-              <div className="pt-4">
+              <div className="pt-4 flex-1 overflow-y-auto pb-4">
                 {activeTab === 'config' && (
                   <APIConfigForm
-                    initialData={initialData?.api}
-                    onSubmit={async (apiData) => {
-                      await handleSaveFullConfig({ api: apiData })
+                    initialData={apiFormInitialData}
+                    onChange={async (configData) => {
+                      await handleSaveFullConfig(configData)
                     }}
                     onTest={handleTestAPI}
                     loading={configManager.loading}
+                    configId={editingConfig?.id}
                   />
                 )}
 
                 {activeTab === 'parser' && (
                   <ParserConfig
-                    initialData={initialData?.parser}
-                    onSubmit={async (parserData) => {
-                      await handleSaveFullConfig({ parser: parserData })
+                    initialData={editingConfig?.parser}
+                    onChange={async (parserData) => {
+                      // 处理新的解析器数据结构
+                      if (editingConfig) {
+                        await handleSaveFullConfig({
+                          parser: {
+                            ...editingConfig.parser,
+                            ...parserData
+                          }
+                        })
+                      }
                     }}
                     onTest={handleTestParser}
                     loading={configManager.loading}
                     sampleData={sampleData}
+                    configId={editingConfig?.id}
                   />
                 )}
 
@@ -312,10 +410,11 @@ function App(): React.JSX.Element {
                       monitoring: initialData?.monitoring,
                       thresholds: initialData?.thresholds
                     }}
-                    onSubmit={async (monitoring, thresholds) => {
+                    onChange={async (monitoring, thresholds) => {
                       await handleSaveFullConfig({ monitoring, thresholds })
                     }}
                     loading={configManager.loading}
+                    configId={editingConfig?.id}
                   />
                 )}
 
@@ -323,29 +422,6 @@ function App(): React.JSX.Element {
                   <TestConnection onTestAPI={handleTestAPI} onTestParser={handleTestParser} />
                 )}
               </div>
-
-              {/* 保存完整配置按钮 */}
-              {activeTab !== 'test' && (
-                <div className="pt-4 border-t">
-                  <button
-                    onClick={async () => {
-                      const nameInput = document.getElementById(
-                        'config-name-input'
-                      ) as HTMLInputElement
-                      const name = nameInput?.value || editingConfig?.name || `配置-${Date.now()}`
-                      await handleSaveFullConfig({ name })
-                      if (!editingConfig) {
-                        setShowNewConfig(false)
-                        setCurrentPage('dashboard')
-                      }
-                    }}
-                    disabled={configManager.loading}
-                    className="w-full bg-green-500 text-white py-2 rounded-md hover:bg-green-600 disabled:opacity-50 font-medium"
-                  >
-                    {configManager.loading ? '保存中...' : '保存完整配置'}
-                  </button>
-                </div>
-              )}
             </div>
           )
         } else {
@@ -374,58 +450,43 @@ function App(): React.JSX.Element {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 通知 */}
-      {notification && (
-        <div
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-lg text-sm ${notification.type === 'success'
-            ? 'bg-green-500 text-white'
-            : notification.type === 'error'
-              ? 'bg-red-500 text-white'
-              : 'bg-yellow-500 text-white'
-            }`}
-        >
-          {notification.message}
-        </div>
-      )}
-
-      {/* 错误提示 */}
-      {(configManager.error || balanceMonitor.error) && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 m-4 rounded-md text-sm">
-          {configManager.error || balanceMonitor.error}
-        </div>
-      )}
-
-      {/* 头部 */}
-      <header className="bg-white border-b shadow-sm">
-        <div className="max-w-full px-4 py-3">
+    <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden font-sans">
+      {/* 头部 - 现代化毛玻璃效果 */}
+      <header className="flex-none bg-card/80 backdrop-blur-md border-b border-border shadow-sm z-10">
+        <div className="max-w-full px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold">
-                ¥
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground font-bold shadow-lg shadow-primary/30 transform transition-transform hover:rotate-12 cursor-default">
+                <span className="text-xl">¥</span>
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">余额监控</h1>
-                <p className="text-xs text-gray-500">DeepSeek及其他API余额监控</p>
+                <h1 className="text-xl font-black tracking-tight text-foreground">
+                  BALANCE<span className="text-primary">.</span>MONITOR
+                </h1>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                  Cloud Service Portfolio
+                </p>
               </div>
             </div>
 
-            {/* 导航按钮 */}
-            <nav className="flex gap-2">
+            {/* 导航按钮 - 现代化分段控制 */}
+            <nav className="flex items-center gap-2 bg-muted/40 p-1.5 rounded-2xl">
               {[
                 { key: 'dashboard', label: '仪表板', icon: '📊' },
-                { key: 'config', label: '配置', icon: '⚙️' },
-                { key: 'logs', label: '日志', icon: '📝' }
+                { key: 'config', label: '服务配置', icon: '⚙️' },
+                { key: 'logs', label: '实时日志', icon: '📝' }
               ].map((item) => (
                 <button
                   key={item.key}
                   onClick={() => setCurrentPage(item.key as PageType)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${currentPage === item.key
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                  className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                    currentPage === item.key
+                      ? 'bg-card text-primary shadow-lg shadow-black/5 ring-1 ring-border/10 scale-105'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
+                  }`}
                 >
-                  {item.icon} {item.label}
+                  <span className="text-lg">{item.icon}</span>
+                  {item.label}
                 </button>
               ))}
             </nav>
@@ -433,30 +494,56 @@ function App(): React.JSX.Element {
         </div>
       </header>
 
-      {/* 主内容区 */}
-      <main className="max-w-full p-4">
-        <div className="max-w-6xl mx-auto">{renderPage()}</div>
+      {/* 主内容区 - 增加了内边距以提供呼吸感 */}
+      <main className="flex-1 max-w-full p-8 overflow-y-auto">
+        <div className="max-w-6xl mx-auto pb-12 flex flex-col">{renderPage()}</div>
       </main>
 
-      {/* 底部状态栏 */}
-      <footer className="bg-white border-t mt-auto">
-        <div className="max-w-full px-4 py-2 text-xs text-gray-500 flex justify-between items-center">
-          <div>
-            {configManager.activeConfig ? (
-              <span>活动配置: {configManager.activeConfig.name}</span>
-            ) : (
-              <span className="text-orange-600">未设置活动配置</span>
-            )}
+      {/* 底部状态栏 - 强化了视觉隔离和垂直间距 */}
+      <footer className="flex-none bg-card/60 backdrop-blur-md border-t border-border shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)]">
+        <div className="max-w-full px-8 py-5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex justify-between items-center">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              <span className="p-1.5 rounded-lg bg-muted text-lg">📁</span>
+              <div className="flex flex-col">
+                <span className="text-[8px] opacity-40 mb-1">Active Profile</span>
+                {configManager.activeConfig ? (
+                  <span className="text-foreground">
+                    <span className="text-primary">{configManager.activeConfig.name}</span>
+                  </span>
+                ) : (
+                  <span className="text-destructive animate-pulse flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-destructive mr-1"></span>
+                    未设置活动配置
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          <div>
-            {balanceMonitor.isMonitoring ? (
-              <span className="text-green-600">● 监控运行中</span>
-            ) : (
-              <span className="text-gray-400">○ 监控已停止</span>
-            )}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 px-3 py-1 bg-muted/30 rounded-full border border-border/50">
+              {balanceMonitor.isMonitoring ? (
+                <>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </span>
+                  <span className="text-green-600">LIVE MONITORING</span>
+                </>
+              ) : (
+                <>
+                  <span className="h-2 w-2 rounded-full bg-muted-foreground/50"></span>
+                  <span className="text-muted-foreground">STANDBY</span>
+                </>
+              )}
+            </div>
+            <div className="text-[10px] text-muted-foreground/40 font-normal">v1.0.0 Alpha</div>
           </div>
         </div>
       </footer>
+
+      {/* Sonner Toaster */}
+      <Toaster position="bottom-right" richColors />
     </div>
   )
 }

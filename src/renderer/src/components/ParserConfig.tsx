@@ -1,68 +1,211 @@
-import React, { useState } from 'react'
-import { ParserConfig as ParserConfigType } from '../types'
+import React, { useEffect, useCallback } from 'react'
+import { ParserConfig as ParserConfigType, BalanceInfoMapping } from '../types'
+import { toast } from 'sonner'
+import { useAutoSave } from '@renderer/hooks'
+import { useFormStore, selectParserFormState, selectUpdateParserForm } from '@renderer/store'
 
 interface ParserConfigProps {
-  initialData?: Partial<ParserConfigType>
-  onSubmit: (data: ParserConfigType) => Promise<void>
-  onTest?: (data: ParserConfigType, sampleData: any) => Promise<any>
+  initialData?: Partial<ParserConfigType> & {
+    isAvailablePath?: string
+    balanceMappings?: BalanceInfoMapping[]
+  }
+  onChange: (data: any) => Promise<void>
+  onTest?: (data: any, sampleData: any) => Promise<any>
   loading?: boolean
   sampleData?: any
+  configId?: string
+}
+
+const findPossiblePaths = (obj: any, prefix: string): string[] => {
+  let paths: string[] = []
+
+  if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+    for (const key in obj) {
+      const currentPath = prefix ? `${prefix}.${key}` : key
+      paths.push(currentPath)
+      paths = paths.concat(findPossiblePaths(obj[key], currentPath))
+    }
+  } else if (Array.isArray(obj) && obj.length > 0) {
+    // 对于数组，只检查第一个元素
+    paths = paths.concat(findPossiblePaths(obj[0], `${prefix}[0]`))
+  }
+
+  return paths
 }
 
 export const ParserConfig: React.FC<ParserConfigProps> = ({
   initialData,
-  onSubmit,
+  onChange,
   onTest,
   loading = false,
-  sampleData
+  sampleData: externalSampleData,
+  configId
 }) => {
-  const [formData, setFormData] = useState<ParserConfigType>({
-    balancePath: initialData?.balancePath || '',
-    currencyPath: initialData?.currencyPath || '',
-    availablePath: initialData?.availablePath || '',
-    customParser: initialData?.customParser || ''
+  const parserFormState = useFormStore(selectParserFormState)
+  const updateParserForm = useFormStore(selectUpdateParserForm)
+  const sampleData = externalSampleData || null
+
+  // 避免未使用变量警告
+  void configId
+
+  // 初始化表单数据
+  const [formData, setFormData] = React.useState(() => ({
+    isAvailablePath: initialData?.isAvailablePath || parserFormState.parser?.isAvailablePath || '',
+    balanceMappings: initialData?.balanceMappings ||
+      parserFormState.parser?.balanceMappings || [
+        {
+          currency: '',
+          total_balance: '',
+          granted_balance: '',
+          topped_up_balance: ''
+        }
+      ],
+    customParser: initialData?.customParser || parserFormState.parser?.customParser || '',
+    isCustomParser: !!(initialData?.customParser || parserFormState.parser?.customParser)
+  }))
+
+  const [showCustom, setShowCustom] = React.useState(
+    !!(initialData?.customParser || parserFormState.parser?.customParser)
+  )
+
+  // 同步到 Zustand store
+  useEffect(() => {
+    updateParserForm({
+      parser: {
+        isAvailablePath: formData.isAvailablePath,
+        balanceMappings: formData.balanceMappings,
+        customParser: formData.customParser
+      }
+    })
+  }, [formData, updateParserForm])
+
+  const { triggerSave, isSaving } = useAutoSave({
+    delay: 1000,
+    onSave: onChange,
+    onSuccess: () => {
+      console.log('解析器配置已自动保存')
+    },
+    onError: (error) => {
+      console.error('自动保存失败:', error)
+      toast.error('自动保存失败: ' + error.message)
+    }
   })
 
-  const [testResult, setTestResult] = useState<any>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [showCustom, setShowCustom] = useState(!!initialData?.customParser)
+  // 添加 useEffect 监听 sampleData 变化
+  useEffect(() => {
+    if (!externalSampleData) return
+    // 如果有测试数据，检查并保存到 store
+    const setSampleData = useFormStore.getState().setSampleData
+    setSampleData(externalSampleData)
+  }, [externalSampleData])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
+  // 加载配置模板
 
-    // 验证
-    if (!showCustom && !formData.balancePath) {
-      setError('余额解析路径不能为空')
-      return
+  const autoDetectPaths = useCallback(() => {
+    if (!sampleData) return
+    const paths = findPossiblePaths(sampleData, '')
+    const detected: { isAvailable?: string; balancePaths: string[] } = {
+      isAvailable: undefined,
+      balancePaths: []
     }
 
-    if (showCustom && !formData.customParser?.trim()) {
-      setError('自定义解析器不能为空')
-      return
+    // 检测 is_available 或类似字段
+    const availabilityKeywords = ['is_available', 'status', 'available', 'active', 'enabled']
+    for (const path of paths) {
+      const lowerPath = path.toLowerCase()
+      if (availabilityKeywords.some((keyword) => lowerPath.includes(keyword))) {
+        detected.isAvailable = path
+        break
+      }
     }
 
-    try {
-      await onSubmit(formData)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '提交失败')
+    // 检测 余额相关路径
+    const balanceKeywords = ['balance', 'amount', 'credit', 'total', 'available_balance']
+    for (const path of paths) {
+      const lowerPath = path.toLowerCase()
+      if (balanceKeywords.some((keyword) => lowerPath.includes(keyword))) {
+        detected.balancePaths.push(path)
+      }
     }
+
+    if (detected.isAvailable || detected.balancePaths.length > 0) {
+      toast.info(`检测到可能的路径: ${JSON.stringify(detected, null, 2)}`)
+    }
+  }, [sampleData])
+  const addBalanceMapping = () => {
+    const newData = {
+      ...formData,
+      balanceMappings: [
+        ...formData.balanceMappings,
+        {
+          currency: '',
+          total_balance: '',
+          granted_balance: '',
+          topped_up_balance: ''
+        }
+      ]
+    }
+    setFormData(newData)
+    triggerSave(newData)
+  }
+
+  const removeBalanceMapping = (index: number) => {
+    const newData = {
+      ...formData,
+      balanceMappings: formData.balanceMappings.filter((_: any, i: number) => i !== index)
+    }
+    setFormData(newData)
+    triggerSave(newData)
+  }
+
+  const updateBalanceMapping = (index: number, field: keyof BalanceInfoMapping, value: string) => {
+    const newData = {
+      ...formData,
+      balanceMappings: formData.balanceMappings.map((mapping: BalanceInfoMapping, i: number) =>
+        i === index ? { ...mapping, [field]: value } : mapping
+      )
+    }
+    setFormData(newData)
+    triggerSave(newData)
+  }
+
+  const updateField = (field: string, value: any) => {
+    const newData = { ...formData, [field]: value }
+    setFormData(newData)
+    triggerSave(newData)
+  }
+
+  const toggleCustom = (useCustom: boolean) => {
+    setShowCustom(useCustom)
+    const newData = { ...formData, isCustomParser: useCustom }
+    setFormData(newData)
+    triggerSave(newData)
   }
 
   const handleTest = async () => {
     if (!onTest || !sampleData) {
-      setError('请先提供测试数据')
+      toast.error('请先提供测试数据')
       return
     }
 
-    setError(null)
-    setTestResult(null)
-
     try {
-      const result = await onTest(formData, sampleData)
-      setTestResult(result)
+      const testData = {
+        ...(showCustom
+          ? { customParser: formData.customParser }
+          : {
+              isAvailablePath: formData.isAvailablePath,
+              balanceMappings: formData.balanceMappings
+            })
+      }
+      const result = await onTest(testData, sampleData)
+      if (result?.success && result?.result) {
+        toast.success('解析器测试成功')
+        console.log('解析结果:', result.result)
+      } else {
+        toast.error(result?.error || '解析失败')
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '测试失败')
+      toast.error(err instanceof Error ? err.message : '测试失败')
     }
   }
 
@@ -72,87 +215,187 @@ export const ParserConfig: React.FC<ParserConfigProps> = ({
     const example = `// 示例数据结构:
 ${JSON.stringify(sampleData, null, 2)}
 
-// 解析路径示例:
-// 1. 简单路径: balance
-// 2. 嵌套路径: user.account.balance
-// 3. 数组路径: balance_infos[0].total_balance
+// 字段映射示例:
+{
+  "isAvailablePath": "is_available", // 是否可用字段路径
+  "balanceMappings": [{
+    "currency": "currency",              // 货币类型字段
+    "total_balance": "total_balance",    // 总余额字段
+    "granted_balance": "granted_balance", // 已授予余额字段
+    "topped_up_balance": "topped_up_balance" // 已充值余额字段
+  }]
+}
 
-// 自定义解析器示例:
-const result = {
-  balance: data.balance_infos[0].total_balance,
-  currency: data.balance_infos[0].currency || "CNY",
-  isAvailable: data.is_available
-};
-return result;`
+// 路径语法示例:
+// - 简单路径: is_available
+// - 嵌套路径: data.available_balance
+// - 数组路径: balance_infos[0].total_balance`
 
     return example
   }
+  // 当 sampleData 更新时，尝试自动推断解析路径
+  useEffect(() => {
+    if (sampleData && !formData.isAvailablePath && !formData.balanceMappings[0]?.total_balance) {
+      autoDetectPaths()
+    }
+  }, [sampleData, formData.isAvailablePath, formData.balanceMappings, autoDetectPaths])
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4 group">
+      {/* 保存状态指示器 */}
+      <div className="text-xs text-muted-foreground text-right h-4">
+        {isSaving && <span className="text-primary italic">保存中...</span>}
+      </div>
+
       {/* 解析模式选择 */}
-      <div>
-        <label className="block text-sm font-medium mb-2">解析模式</label>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              checked={!showCustom}
-              onChange={() => setShowCustom(false)}
-              className="cursor-pointer"
-            />
-            <span className="text-sm">JSON路径</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              checked={showCustom}
-              onChange={() => setShowCustom(true)}
-              className="cursor-pointer"
-            />
-            <span className="text-sm">自定义解析器</span>
-          </label>
+      <div className="space-y-3">
+        <label className="block text-sm font-bold text-foreground ml-1">解析模式</label>
+        <div className="flex items-center gap-1 bg-muted/30 p-1.5 rounded-xl w-fit">
+          <button
+            type="button"
+            onClick={() => toggleCustom(false)}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold transition-all duration-200 rounded-lg ${
+              !showCustom
+                ? 'bg-primary text-primary-foreground shadow-sm scale-105'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            }`}
+          >
+            <span className="text-base">📋</span>
+            字段映射
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleCustom(true)}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold transition-all duration-200 rounded-lg ${
+              showCustom
+                ? 'bg-primary text-primary-foreground shadow-sm scale-105'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            }`}
+          >
+            <span className="text-base">💻</span>
+            自定义解析器
+          </button>
         </div>
       </div>
 
-      {/* JSON路径模式 */}
+      {/* 字段映射模式 */}
       {!showCustom && (
         <>
+          {/* 可用状态路径 */}
           <div>
-            <label className="block text-sm font-medium mb-1">余额路径 (必填)</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">
+              服务可用状态字段路径
+            </label>
             <input
               type="text"
-              value={formData.balancePath}
-              onChange={(e) => setFormData((prev) => ({ ...prev, balancePath: e.target.value }))}
-              placeholder="balance_infos[0].total_balance"
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-              required
+              value={formData.isAvailablePath}
+              onChange={(e) => updateField('isAvailablePath', e.target.value)}
+              placeholder="is_available"
+              className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              支持: balance, user.balance, items[0].value
+            <p className="text-xs text-muted-foreground mt-1">
+              例如: is_available, status, success
             </p>
           </div>
 
+          {/* 余额信息映射 */}
           <div>
-            <label className="block text-sm font-medium mb-1">货币路径 (可选)</label>
-            <input
-              type="text"
-              value={formData.currencyPath}
-              onChange={(e) => setFormData((prev) => ({ ...prev, currencyPath: e.target.value }))}
-              placeholder="balance_infos[0].currency"
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-            />
-          </div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-foreground">余额信息字段映射</label>
+              <button
+                type="button"
+                onClick={addBalanceMapping}
+                className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded hover:opacity-90"
+              >
+                + 添加
+              </button>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">可用状态路径 (可选)</label>
-            <input
-              type="text"
-              value={formData.availablePath}
-              onChange={(e) => setFormData((prev) => ({ ...prev, availablePath: e.target.value }))}
-              placeholder="is_available"
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-            />
+            {formData.balanceMappings.map((mapping: BalanceInfoMapping, index: number) => (
+              <div key={index} className="border border-border bg-card rounded-md p-3 mb-3">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-foreground">余额信息 #{index + 1}</span>
+                  {formData.balanceMappings.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeBalanceMapping(index)}
+                      className="text-destructive hover:opacity-80 text-sm"
+                    >
+                      删除
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-foreground">
+                      货币类型字段
+                    </label>
+                    <input
+                      type="text"
+                      value={mapping.currency}
+                      onChange={(e) => updateBalanceMapping(index, 'currency', e.target.value)}
+                      placeholder="currency"
+                      className="w-full px-2 py-1 border border-border bg-muted/30 text-foreground rounded text-sm font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">不填写则默认为 CNY</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-foreground">
+                      总余额字段（必填）
+                    </label>
+                    <input
+                      type="text"
+                      value={mapping.total_balance}
+                      onChange={(e) => updateBalanceMapping(index, 'total_balance', e.target.value)}
+                      placeholder="total_balance"
+                      className="w-full px-2 py-1 border border-border bg-muted/30 text-foreground rounded text-sm font-mono"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      例如: total_balance, available_balance
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-foreground">
+                      已授予余额字段
+                    </label>
+                    <input
+                      type="text"
+                      value={mapping.granted_balance}
+                      onChange={(e) =>
+                        updateBalanceMapping(index, 'granted_balance', e.target.value)
+                      }
+                      placeholder="granted_balance"
+                      className="w-full px-2 py-1 border border-border bg-muted/30 text-foreground rounded text-sm font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      例如: voucher_balance, bonus_balance
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-foreground">
+                      已充值余额字段
+                    </label>
+                    <input
+                      type="text"
+                      value={mapping.topped_up_balance}
+                      onChange={(e) =>
+                        updateBalanceMapping(index, 'topped_up_balance', e.target.value)
+                      }
+                      placeholder="topped_up_balance"
+                      className="w-full px-2 py-1 border border-border bg-muted/30 text-foreground rounded text-sm font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      例如: cash_balance, deposited_balance
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </>
       )}
@@ -160,94 +403,62 @@ return result;`
       {/* 自定义解析器模式 */}
       {showCustom && (
         <div>
-          <label className="block text-sm font-medium mb-1">自定义解析器</label>
+          <label className="block text-sm font-medium mb-1 text-foreground">自定义解析器</label>
           <textarea
             value={formData.customParser}
-            onChange={(e) => setFormData((prev) => ({ ...prev, customParser: e.target.value }))}
-            placeholder="const result = { balance: data.balance, currency: 'CNY', isAvailable: true }; return result;"
-            rows={8}
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+            onChange={(e) => updateField('customParser', e.target.value)}
+            placeholder={`// 解析函数示例:
+const result = {
+  balances: data.balance_infos.map(info => ({
+    currency: info.currency || 'CNY',
+    total: info.total_balance,
+    granted: info.granted_balance || 0,
+    toppedUp: info.topped_up_balance || 0
+  })),
+  isAvailable: data.is_available || false
+};
+return result;`}
+            rows={10}
+            className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
             required
           />
-          <p className="text-xs text-gray-500 mt-1">
-            必须返回对象: {`{ balance: number, currency?: string, isAvailable?: boolean }`}
+          <p className="text-xs text-muted-foreground mt-1">
+            必须返回对象，包含: balances数组(含currency, total, granted, toppedUp) 和 isAvailable
           </p>
         </div>
       )}
 
       {/* 测试数据提示 */}
       {sampleData && (
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-          <div className="text-sm font-medium mb-1">可用测试数据:</div>
-          <pre className="text-xs bg-white p-2 rounded overflow-x-auto">
+        <div className="bg-accent border border-border rounded-md p-3">
+          <div className="text-sm font-medium mb-1 text-accent-foreground">可用测试数据:</div>
+          <pre className="text-xs bg-card border border-border text-foreground p-2 rounded overflow-x-auto">
             {JSON.stringify(sampleData, null, 2)}
           </pre>
         </div>
       )}
 
       {/* 示例代码 */}
-      <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
-        <div className="text-sm font-medium mb-1">解析器参考:</div>
-        <pre className="text-xs bg-white p-2 rounded overflow-x-auto whitespace-pre-wrap">
+      <div className="bg-muted/50 border border-border rounded-md p-3">
+        <div className="text-sm font-medium mb-1 text-foreground">解析器参考:</div>
+        <pre className="text-xs bg-card border border-border text-foreground p-2 rounded overflow-x-auto whitespace-pre-wrap">
           {generateExampleCode()}
         </pre>
       </div>
 
-      {/* 错误提示 */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
-          {error}
-        </div>
-      )}
-
-      {/* 测试结果 */}
-      {testResult && (
-        <div
-          className={`border rounded-md p-3 text-sm ${
-            testResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-          }`}
-        >
-          <div className="font-medium mb-1">{testResult.success ? '✓ 解析成功' : '✗ 解析失败'}</div>
-          {testResult.success && testResult.result && (
-            <>
-              <div className="text-xs grid grid-cols-2 gap-2 mt-2">
-                <div>
-                  余额: <span className="font-mono">{testResult.result.balance}</span>
-                </div>
-                <div>
-                  货币: <span className="font-mono">{testResult.result.currency}</span>
-                </div>
-                <div>
-                  可用:{' '}
-                  <span className="font-mono">{testResult.result.isAvailable ? '是' : '否'}</span>
-                </div>
-              </div>
-            </>
-          )}
-          {testResult.error && <div className="text-xs text-red-600 mt-1">{testResult.error}</div>}
-        </div>
-      )}
-
-      {/* 按钮组 */}
-      <div className="flex gap-2 pt-2">
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex-1 bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? '保存中...' : '保存解析器'}
-        </button>
-        {onTest && (
+      {/* 按钮组（移除保存按钮，只保留测试按钮） */}
+      {onTest && (
+        <div className="flex gap-2 pt-2">
           <button
             type="button"
             onClick={handleTest}
             disabled={loading || !sampleData}
-            className="px-4 py-2 border border-blue-500 text-blue-500 rounded-md hover:bg-blue-50 disabled:opacity-50"
+            className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 disabled:opacity-50"
           >
             测试解析
           </button>
-        )}
-      </div>
-    </form>
+        </div>
+      )}
+    </div>
   )
 }

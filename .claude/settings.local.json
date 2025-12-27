@@ -11,9 +11,20 @@
       "Bash(git commit:*)",
       "Bash(git remote add origin https://github.com/cherry-min/balance-monitor.git:*)",
       "Bash(git push:*)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(npm run typecheck:web:*)",
+      "Bash(npm run typecheck:node:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx tsc --noEmit:*)",
+      "Bash(nul)",
+      "mcp__context7__get-library-docs",
+      "mcp__memory__create_entities",
+      "mcp__memory__create_relations",
+      "Bash(npm install:*)"
     ],
-    "deny": [],
+    "deny": ["Bash(npm run dev)"],
     "ask": []
   }
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { APIRequest, ParserConfig, ParsedBalance } from '../types'
+import { APIRequest, ParserConfig } from '../types'
+import { toast } from 'sonner'
 
 interface TestConnectionProps {
   onTestAPI: (request: APIRequest) => Promise<any>
@@ -20,55 +21,59 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
     availablePath: '',
     customParser: ''
   })
-  const [apiResult, setApiResult] = useState<any>(null)
-  const [parserResult, setParserResult] = useState<ParsedBalance | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const handleTestAPI = async () => {
     if (!apiRequest.url) {
-      setError('请输入API地址')
+      toast.error('请输入API地址')
       return
     }
 
     setLoading(true)
-    setError(null)
     try {
       const result = await onTestAPI(apiRequest)
-      setApiResult(result)
       if (result.success) {
         setStep(2)
+        toast.success('API连接成功')
+      } else {
+        // 测试失败，只显示 toast
+        toast.error(result.error || 'API测试失败')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'API测试失败')
+      toast.error(err instanceof Error ? err.message : 'API测试失败')
     } finally {
       setLoading(false)
     }
   }
 
   const handleTestParser = async () => {
-    if (!apiResult?.data) {
-      setError('请先测试API')
+    if (!apiRequest.url) {
+      toast.error('请先配置并测试API')
       return
     }
 
     if (!parserConfig.balancePath && !parserConfig.customParser) {
-      setError('请输入解析路径或自定义解析器')
+      toast.error('请输入解析路径或自定义解析器')
       return
     }
 
     setLoading(true)
-    setError(null)
     try {
-      const result = await onTestParser(apiResult.data, parserConfig)
-      if (result.success && result.result) {
-        setParserResult(result.result)
-        setStep(3)
+      const result = await onTestAPI(apiRequest)
+      if (!result.success || !result.data) {
+        toast.error('API测试失败，无法验证解析器')
+        setLoading(false)
+        return
+      }
+
+      const parseResult = await onTestParser(result.data, parserConfig)
+      if (parseResult.success && parseResult.result) {
+        toast.success('解析成功')
       } else {
-        setError(result.error || '解析失败')
+        toast.error(parseResult.error || '解析失败')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '解析测试失败')
+      toast.error(err instanceof Error ? err.message : '解析测试失败')
     } finally {
       setLoading(false)
     }
@@ -76,63 +81,72 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
 
   const reset = () => {
     setStep(1)
-    setApiResult(null)
-    setParserResult(null)
-    setError(null)
   }
 
   return (
     <div className="space-y-4">
-      {/* 步骤指示器 */}
-      <div className="flex justify-between items-center bg-gray-50 p-2 rounded-md">
+      {/* 步骤指示器 - 现代化 Segmented 风格 */}
+      <div className="flex justify-between items-center bg-muted/30 p-2 rounded-2xl">
         <div className="flex gap-2">
           <div
-            className={`px-3 py-1 rounded text-sm ${step >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+              step >= 1
+                ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105'
+                : 'bg-secondary text-secondary-foreground opacity-50'
+            }`}
           >
-            1. API测试
+            <span className="flex items-center justify-center w-5 h-5 bg-white/20 rounded-full text-[10px]">
+              1
+            </span>
+            API测试
           </div>
           <div
-            className={`px-3 py-1 rounded text-sm ${step >= 2 ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+              step >= 2
+                ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105'
+                : 'bg-secondary text-secondary-foreground opacity-50'
+            }`}
           >
-            2. 解析器配置
-          </div>
-          <div
-            className={`px-3 py-1 rounded text-sm ${step >= 3 ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
-          >
-            3. 完成
+            <span className="flex items-center justify-center w-5 h-5 bg-white/20 rounded-full text-[10px]">
+              2
+            </span>
+            解析器配置
           </div>
         </div>
         {step > 1 && (
-          <button onClick={reset} className="text-xs text-gray-600 hover:text-gray-800">
-            重置
+          <button
+            onClick={reset}
+            className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors px-4 py-2 hover:bg-primary/5 rounded-lg"
+          >
+            ↺ 重置流程
           </button>
         )}
       </div>
 
       {/* 步骤1: API配置 */}
-      {step === 1 && (
+      {(step === 1 || step === 2) && (
         <div className="space-y-3">
-          <div className="text-lg font-medium">步骤1: 配置API</div>
+          <div className="text-lg font-medium text-foreground">步骤1: 配置API</div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">API地址</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">API地址</label>
             <input
               type="url"
               value={apiRequest.url}
               onChange={(e) => setApiRequest((prev) => ({ ...prev, url: e.target.value }))}
               placeholder="https://api.example.com/balance"
-              className="w-full px-3 py-2 border rounded-md"
+              className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">请求方法</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">请求方法</label>
             <select
               value={apiRequest.method}
               onChange={(e) =>
                 setApiRequest((prev) => ({ ...prev, method: e.target.value as any }))
               }
-              className="w-full px-3 py-2 border rounded-md"
+              className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="GET">GET</option>
               <option value="POST">POST</option>
@@ -140,7 +154,9 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Authorization Header (可选)</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">
+              Authorization Header (可选)
+            </label>
             <input
               type="text"
               placeholder="Bearer YOUR_TOKEN"
@@ -151,61 +167,27 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
                   headers: value ? [{ key: 'Authorization', value }] : []
                 }))
               }}
-              className="w-full px-3 py-2 border rounded-md"
+              className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
             />
           </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
-              {error}
-            </div>
-          )}
 
           <button
             onClick={handleTestAPI}
             disabled={loading}
-            className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 disabled:opacity-50"
+            className="w-full bg-primary text-primary-foreground py-2 rounded-md hover:opacity-90 disabled:opacity-50 font-medium"
           >
             {loading ? '测试中...' : '测试API连接'}
           </button>
-
-          {apiResult && (
-            <div
-              className={`border rounded-md p-3 text-sm ${
-                apiResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-              }`}
-            >
-              <div className="font-medium mb-1">
-                {apiResult.success ? '✓ API连接成功' : '✗ API连接失败'}
-              </div>
-              <div className="text-xs">
-                {apiResult.responseTime && `响应时间: ${apiResult.responseTime}ms`}
-                {apiResult.statusCode && ` | 状态码: ${apiResult.statusCode}`}
-              </div>
-              {apiResult.data && (
-                <pre className="mt-2 p-2 bg-white rounded text-xs overflow-x-auto max-h-32">
-                  {JSON.stringify(apiResult.data, null, 2)}
-                </pre>
-              )}
-            </div>
-          )}
         </div>
       )}
 
       {/* 步骤2: 解析器配置 */}
       {step === 2 && (
         <div className="space-y-3">
-          <div className="text-lg font-medium">步骤2: 配置解析器</div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm">
-            <div className="font-medium mb-1">API返回的数据:</div>
-            <pre className="bg-white p-2 rounded overflow-x-auto text-xs">
-              {JSON.stringify(apiResult.data, null, 2)}
-            </pre>
-          </div>
+          <div className="text-lg font-medium text-foreground">步骤2: 配置解析器</div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">余额解析路径</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">余额解析路径</label>
             <input
               type="text"
               value={parserConfig.balancePath}
@@ -213,16 +195,18 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
                 setParserConfig((prev) => ({ ...prev, balancePath: e.target.value }))
               }
               placeholder="balance_infos[0].total_balance"
-              className="w-full px-3 py-2 border rounded-md font-mono text-sm"
+              className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               示例: balance, user.balance, items[0].value
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-sm font-medium mb-1">货币路径 (可选)</label>
+              <label className="block text-sm font-medium mb-1 text-foreground">
+                货币路径 (可选)
+              </label>
               <input
                 type="text"
                 value={parserConfig.currencyPath}
@@ -230,11 +214,13 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
                   setParserConfig((prev) => ({ ...prev, currencyPath: e.target.value }))
                 }
                 placeholder="balance_infos[0].currency"
-                className="w-full px-3 py-2 border rounded-md font-mono text-sm"
+                className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">可用状态路径 (可选)</label>
+              <label className="block text-sm font-medium mb-1 text-foreground">
+                可用状态路径 (可选)
+              </label>
               <input
                 type="text"
                 value={parserConfig.availablePath}
@@ -242,13 +228,15 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
                   setParserConfig((prev) => ({ ...prev, availablePath: e.target.value }))
                 }
                 placeholder="is_available"
-                className="w-full px-3 py-2 border rounded-md font-mono text-sm"
+                className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">自定义解析器 (可选)</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">
+              自定义解析器 (可选)
+            </label>
             <textarea
               value={parserConfig.customParser}
               onChange={(e) =>
@@ -256,71 +244,16 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
               }
               placeholder="const result = { balance: data.balance, currency: 'CNY', isAvailable: true }; return result;"
               rows={4}
-              className="w-full px-3 py-2 border rounded-md font-mono text-sm"
+              className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
             />
           </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
-              {error}
-            </div>
-          )}
 
           <button
             onClick={handleTestParser}
             disabled={loading}
-            className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 disabled:opacity-50"
+            className="w-full bg-primary text-primary-foreground py-2 rounded-md hover:opacity-90 disabled:opacity-50 font-medium"
           >
             {loading ? '测试中...' : '测试解析器'}
-          </button>
-
-          {parserResult && (
-            <div className="bg-green-50 border border-green-200 rounded-md p-3 text-sm">
-              <div className="font-medium mb-1">✓ 解析成功</div>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <div>
-                  余额: <span className="font-mono font-bold">{parserResult.balance}</span>
-                </div>
-                <div>
-                  货币: <span className="font-mono">{parserResult.currency}</span>
-                </div>
-                <div>
-                  可用: <span className="font-mono">{parserResult.isAvailable ? '是' : '否'}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 步骤3: 完成 */}
-      {step === 3 && (
-        <div className="space-y-3 text-center py-6">
-          <div className="text-4xl">🎉</div>
-          <div className="text-lg font-medium text-green-600">测试完成！</div>
-          <div className="text-sm text-gray-600">
-            您的API和解析器配置已验证通过，可以保存为监控配置。
-          </div>
-          <div className="bg-green-50 border border-green-200 rounded-md p-3 text-left text-sm">
-            <div className="font-medium mb-1">最终结果:</div>
-            <div className="space-y-1">
-              <div>
-                余额:{' '}
-                <span className="font-mono font-bold text-green-700">{parserResult?.balance}</span>
-              </div>
-              <div>
-                货币: <span className="font-mono">{parserResult?.currency}</span>
-              </div>
-              <div>
-                可用: <span className="font-mono">{parserResult?.isAvailable ? '是' : '否'}</span>
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={reset}
-            className="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600"
-          >
-            再次测试
           </button>
         </div>
       )}

@@ -162,12 +162,12 @@ export const useConfigManager = () => {
       api: {
         url: config.api.url,
         method: config.api.method,
-        headers: config.api.headers.map((h) => ({ key: h.key, value: h.value })),
+        headers: (config.api.headers || []).map((h) => ({ key: h.key, value: h.value })),
         body: config.api.body || '',
         timeout: config.api.timeout || 10000
       },
       parser: {
-        balancePath: config.parser.balancePath,
+        balancePath: config.parser.balancePath || '',
         currencyPath: config.parser.currencyPath || '',
         availablePath: config.parser.availablePath || '',
         customParser: config.parser.customParser || ''

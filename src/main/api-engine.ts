@@ -32,7 +32,7 @@ export class APIEngine {
       try {
         new URL(request.url)
       } catch (error: any) {
-        console.log(error);
+        console.log(error)
 
         resolve({
           success: false,

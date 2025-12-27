@@ -155,7 +155,28 @@ function setupIPCHandlers(): void {
   })
 
   ipcMain.handle('delete-config', async (_event, configId: string) => {
-    return configManager?.deleteConfig(configId) || false
+    try {
+      // 先停止该配置的监控（如果正在监控）
+      if (monitorScheduler) {
+        const isRunning = monitorScheduler.getStatus(configId)?.status === 'running'
+        if (isRunning) {
+          logger.info(`删除配置 ${configId}: 先停止监控`)
+          monitorScheduler.stopMonitor(configId)
+        }
+      }
+
+      // 删除配置
+      const result = configManager?.deleteConfig(configId) || false
+
+      if (result) {
+        logger.success(`配置 ${configId} 已删除`)
+      }
+
+      return result
+    } catch (error) {
+      logger.error(`删除配置失败: ${error}`)
+      throw error
+    }
   })
 
   ipcMain.handle('set-active-config', async (_event, configId: string) => {

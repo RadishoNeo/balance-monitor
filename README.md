@@ -89,6 +89,7 @@ npm run format         # Format code with Prettier
 ### Testing
 
 Use the built-in testing features in the application UI:
+
 - **Test API Connection**: Validate endpoint connectivity
 - **Test Parser**: Verify data extraction with sample responses
 
@@ -126,10 +127,12 @@ This project includes GitHub Actions workflow (`.github/workflows/build.yml`) th
 ## Configuration
 
 Configurations are stored in:
+
 - **Windows**: `C:\Users\{USER}\AppData\Roaming\my-app\configs\`
 - **Linux/macOS**: `~/.config/my-app/configs/`
 
 Features:
+
 - Multiple configuration support
 - Active configuration switching
 - Import/export functionality
@@ -138,11 +141,13 @@ Features:
 ## IPC Communication
 
 **Main → Renderer:**
+
 - `balance-update`: Balance data updates
 - `status-change`: Monitor status changes
 - `app-ready`: App initialization
 
 **Renderer → Main:**
+
 - Configuration management (CRUD operations)
 - API testing and validation
 - Log retrieval and management

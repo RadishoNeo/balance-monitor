@@ -57,116 +57,182 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
       case 'stopped':
         return 'bg-gray-500'
       default:
-        return 'bg-gray-400'
+        return 'bg-muted-foreground'
     }
   }
 
-  // 获取余额显示颜色
-  const getBalanceColor = () => {
-    if (lastBalance === null) return 'text-gray-500'
-    // 这里简化处理，实际应该根据配置的阈值判断
-    if (lastBalance <= 10) return 'text-red-600 font-bold'
-    if (lastBalance <= 50) return 'text-yellow-600 font-bold'
-    return 'text-green-600 font-bold'
-  }
-
   return (
-    <div className="space-y-4">
-      {/* 余额大卡片 */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-6 shadow-lg">
-        <div className="text-sm opacity-90 mb-1">当前余额</div>
-        <div className={`text-4xl mb-2 ${getBalanceColor()}`}>
-          {lastBalance !== null ? `${lastCurrency}${lastBalance.toFixed(2)}` : '--'}
-        </div>
-        <div className="flex justify-between text-sm opacity-90">
-          <span>状态: {isMonitoring ? '监控中' : '已停止'}</span>
-          <span>更新: {getLastUpdateTime() || '无'}</span>
+    <div className="space-y-6">
+      {/* 余额大卡片 - 采用了更加大气的设计 */}
+      <div className="relative overflow-hidden bg-primary text-primary-foreground rounded-3xl p-8 shadow-2xl shadow-primary/20">
+        {/* 背景装饰图案 */}
+        <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[-20%] left-[-10%] w-48 h-48 bg-black/10 rounded-full blur-2xl"></div>
+
+        <div className="relative z-10">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">
+                Total Available Balance
+              </p>
+              <h3 className="text-sm font-bold opacity-90 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                实时账户余额
+              </h3>
+            </div>
+            <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl border border-white/10">
+              💰
+            </div>
+          </div>
+
+          <div className="flex items-baseline gap-2 mb-6">
+            <span className="text-2xl font-bold opacity-60">{lastCurrency}</span>
+            <span className="text-6xl font-black tracking-tighter">
+              {lastBalance !== null ? lastBalance.toFixed(2) : '--'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/10">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-wider opacity-50">
+                监控状态
+              </span>
+              <span className="text-sm font-bold">
+                {isMonitoring ? 'ACTIVE MONITORING' : 'PAUSED'}
+              </span>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-bold uppercase tracking-wider opacity-50">
+                最后同步时间
+              </span>
+              <span className="text-sm font-bold font-mono">
+                {getLastUpdateTime() || 'PENDING'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* 统计信息 */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white border rounded-md p-3 text-center">
-          <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-          <div className="text-xs text-gray-500">总配置</div>
-        </div>
-        <div className="bg-white border rounded-md p-3 text-center">
-          <div className="text-2xl font-bold text-green-600">{stats.running}</div>
-          <div className="text-xs text-gray-500">运行中</div>
-        </div>
-        <div className="bg-white border rounded-md p-3 text-center">
-          <div className="text-2xl font-bold text-yellow-600">{stats.stopped}</div>
-          <div className="text-xs text-gray-500">已停止</div>
-        </div>
-        <div className="bg-white border rounded-md p-3 text-center">
-          <div className="text-2xl font-bold text-red-600">{stats.error}</div>
-          <div className="text-xs text-gray-500">错误</div>
-        </div>
+      {/* 统计信息 - 现代化网格布局 */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: '总配置', value: stats.total, icon: '📂', color: 'text-primary' },
+          { label: '运行中', value: stats.running, icon: '⚡', color: 'text-green-500' },
+          { label: '已停止', value: stats.stopped, icon: '⏸️', color: 'text-amber-500' },
+          { label: '错误', value: stats.error, icon: '⚠️', color: 'text-destructive' }
+        ].map((item, i) => (
+          <div
+            key={i}
+            className="bg-card/40 backdrop-blur-sm border border-border/50 rounded-2xl p-4 transition-all hover:bg-card hover:shadow-xl hover:shadow-black/5 group"
+          >
+            <div className="text-xl mb-2 group-hover:scale-125 transition-transform duration-300">
+              {item.icon}
+            </div>
+            <div className={`text-2xl font-black ${item.color}`}>{item.value}</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+              {item.label}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* 操作按钮 */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* 操作按钮 - 更加精致的层级感 */}
+      <div className="flex gap-3">
         {!isMonitoring ? (
           <button
             onClick={onStart}
             disabled={loading || stats.total === 0}
-            className="bg-green-500 text-white py-2 rounded-md hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            className="flex-1 bg-green-500 text-white py-4 rounded-2xl hover:bg-green-600 shadow-lg shadow-green-500/20 active:scale-95 transition-all text-sm font-black tracking-widest uppercase disabled:opacity-50"
           >
-            {loading ? '启动中...' : '开始监控'}
+            {loading ? 'INITIALIZING...' : '▶ START MONITORING'}
           </button>
         ) : (
           <button
             onClick={onStop}
             disabled={loading}
-            className="bg-red-500 text-white py-2 rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            className="flex-1 bg-destructive text-destructive-foreground py-4 rounded-2xl hover:bg-destructive/90 shadow-lg shadow-destructive/20 active:scale-95 transition-all text-sm font-black tracking-widest uppercase disabled:opacity-50"
           >
-            {loading ? '停止中...' : '停止监控'}
+            {loading ? 'CLOSING...' : '■ STOP MONITORING'}
           </button>
         )}
 
         <button
           onClick={onManualQuery}
           disabled={loading || !isMonitoring}
-          className="bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+          className="px-8 bg-card border border-border/50 text-foreground py-4 rounded-2xl hover:bg-muted shadow-lg shadow-black/5 active:scale-95 transition-all text-sm font-black tracking-widest uppercase disabled:opacity-30"
         >
-          手动刷新
+          🔄 REFRESH
         </button>
-
-        <div className="bg-gray-100 text-gray-600 py-2 rounded-md text-center text-sm flex items-center justify-center">
-          {isMonitoring ? '运行中' : '已停止'}
-        </div>
       </div>
 
-      {/* 详细状态列表 */}
+      {/* 详细状态列表 - 优化视觉层次 */}
       {statuses.length > 0 && (
-        <div className="bg-white border rounded-md overflow-hidden">
-          <div className="bg-gray-50 px-3 py-2 border-b text-sm font-medium">配置状态</div>
-          <div className="max-h-48 overflow-y-auto">
+        <div className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-3xl overflow-hidden shadow-2xl shadow-black/5">
+          <div className="bg-muted/50 px-6 py-4 border-b border-border/50 flex justify-between items-center">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+              Detailed Service Status
+            </h4>
+            <span className="text-[10px] font-bold text-primary px-2 py-1 bg-primary/10 rounded-lg">
+              LIVE FEED
+            </span>
+          </div>
+          <div className="divide-y divide-border/30 max-h-[300px] overflow-y-auto custom-scrollbar">
             {statuses.map((status) => (
               <div
                 key={status.configId}
-                className="px-3 py-2 border-b last:border-0 text-sm hover:bg-gray-50"
+                className="px-6 py-4 hover:bg-card/80 transition-colors group"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`w-2 h-2 rounded-full ${getStatusColor(status.status)}`}
-                    ></span>
-                    <span className="font-medium">{status.configId.substring(0, 8)}...</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-3 h-3 rounded-full ${getStatusColor(status.status)} shadow-sm ring-4 ring-offset-0 ${status.status === 'running' ? 'ring-green-500/10 animate-pulse' : 'ring-gray-500/5'}`}
+                    ></div>
+                    <span className="font-bold text-sm tracking-tight text-foreground group-hover:text-primary transition-colors">
+                      {status.configId.substring(0, 8).toUpperCase()}
+                    </span>
                   </div>
-                  <div className="text-xs text-gray-500">
-                    {status.status === 'running' && (
-                      <>
-                        下次:{' '}
-                        {status.nextRun ? new Date(status.nextRun).toLocaleTimeString() : '--'}
-                      </>
+                  <div className="text-[10px] font-bold text-muted-foreground bg-muted/50 px-2 py-1 rounded-md uppercase tracking-wider">
+                    {status.status === 'running' ? (
+                      <span>
+                        Next Sync:{' '}
+                        {status.nextRun
+                          ? new Date(status.nextRun).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : '--'}
+                      </span>
+                    ) : (
+                      <span>Paused / Stopped</span>
                     )}
-                    {status.status === 'error' && <>错误: {status.errorCount}次</>}
                   </div>
                 </div>
-                <div className="text-xs text-gray-400 mt-0.5">
-                  成功: {status.successCount} | 失败: {status.errorCount}
-                  {status.lastRun && ` | 最后: ${new Date(status.lastRun).toLocaleTimeString()}`}
+                <div className="flex items-center gap-4 ml-6">
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="text-[10px] font-bold text-green-500">
+                      ✓ {status.successCount}
+                    </span>
+                    <span className="text-[10px] font-bold text-destructive">
+                      ✗ {status.errorCount}
+                    </span>
+                  </div>
+                  <div className="h-1 flex-1 bg-muted/50 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-1000"
+                      style={{
+                        width: `${Math.min(100, (status.successCount / (status.successCount + status.errorCount || 1)) * 100)}%`
+                      }}
+                    ></div>
+                  </div>
+                  <span className="text-[10px] font-mono text-muted-foreground/40">
+                    {status.lastRun
+                      ? new Date(status.lastRun).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit'
+                        })
+                      : 'NEVER'}
+                  </span>
                 </div>
               </div>
             ))}
@@ -176,7 +242,7 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
 
       {/* 提示信息 */}
       {stats.total === 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-md p-4">
+        <div className="bg-accent border border-border text-accent-foreground rounded-md p-4">
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium mb-1">未找到监控数据</h4>
@@ -189,7 +255,7 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
             <button
               onClick={onManualQuery}
               disabled={loading}
-              className="ml-4 px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 disabled:opacity-50"
+              className="ml-4 px-3 py-1 bg-primary text-primary-foreground text-sm rounded hover:opacity-90 disabled:opacity-50"
             >
               立即查询
             </button>

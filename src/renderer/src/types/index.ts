@@ -59,6 +59,21 @@ export interface Notification {
   timestamp: number
 }
 
+// 认证配置类型
+export interface AuthConfig {
+  type: 'Basic' | 'Bearer'
+  apiKey: string
+  headerKey?: 'Authorization' | 'X-Api-Key'
+}
+
+// 响应字段映射类型
+export interface BalanceInfoMapping {
+  currency: string | 'CNY' // 默认值
+  total_balance: string
+  granted_balance: string
+  topped_up_balance: string
+}
+
 // 以下类型应从 preload 导入
 export interface APIRequest {
   url: string
@@ -101,22 +116,50 @@ export interface ThresholdConfig {
   currency: string
 }
 
+// 针对API配置的扩展接口（用于简化表单）
+export interface APIConfig {
+  url: string
+  method: 'GET' | 'POST'
+  auth?: AuthConfig
+  timeout?: number
+  body?: string
+  name?: string
+}
+
 export interface BalanceMonitorConfig {
   id: string
   name: string
+  url?: string // 扁平化配置字段
+  method?: 'GET' | 'POST'
+  auth?: AuthConfig
+  timeout?: number
+  body?: string
   api: {
     url: string
     method: 'GET' | 'POST'
     headers: Array<{ key: string; value: string; encrypted?: boolean }>
     body?: string
     timeout?: number
+    auth?: AuthConfig // 新增认证配置
   }
-  parser: ParserConfig
+  parser: {
+    isAvailablePath?: string // 是否可用字段路径
+    balanceMappings?: BalanceInfoMapping[] // 余额信息映射数组
+    // 保留旧版本兼容性
+    balancePath?: string
+    currencyPath?: string
+    availablePath?: string
+    customParser?: string
+  }
   monitoring: MonitoringConfig
   thresholds: ThresholdConfig
   createdAt: string
   updatedAt: string
   enabled: boolean
+  response?: {
+    is_available: string
+    balance_infos: BalanceInfoMapping[]
+  }
 }
 
 export interface MonitorStatus {
@@ -160,7 +203,10 @@ export interface ExtendedElectronAPI {
 
   // API测试
   testApiConnection: (request: APIRequest) => Promise<APIResponse>
-  testParser: (data: any, parserConfig: ParserConfig) => Promise<{ success: boolean; result?: ParsedBalance; error?: string }>
+  testParser: (
+    data: any,
+    parserConfig: ParserConfig
+  ) => Promise<{ success: boolean; result?: ParsedBalance; error?: string }>
 
   // 监控控制
   startMonitoring: () => Promise<{ success: boolean; message: string }>

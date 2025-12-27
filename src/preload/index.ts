@@ -16,7 +16,8 @@ const electronAPIExtended = {
 
   // API测试
   testApiConnection: (request: any) => ipcRenderer.invoke('test-api-connection', request),
-  testParser: (data: any, parserConfig: any) => ipcRenderer.invoke('test-parser', data, parserConfig),
+  testParser: (data: any, parserConfig: any) =>
+    ipcRenderer.invoke('test-parser', data, parserConfig),
 
   // 监控控制
   startMonitoring: () => ipcRenderer.invoke('start-monitoring'),

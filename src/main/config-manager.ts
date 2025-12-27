@@ -1,6 +1,14 @@
 import { app } from 'electron'
 import { join } from 'path'
-import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync, readdirSync, statSync } from 'fs'
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+  mkdirSync,
+  readdirSync,
+  statSync
+} from 'fs'
 import { safeStorage } from 'electron'
 import { Logger } from './logger'
 
@@ -56,15 +64,15 @@ export class ConfigManager {
   private activeConfigId: string | null
 
   constructor(_options: ConfigManagerOptions = {}) {
-    console.log(_options);
+    console.log(_options)
 
     this.logger = new Logger('ConfigManager')
     this.configs = new Map()
     this.activeConfigId = null
 
-    // 配置目录: %APPDATA%/balance-monitor
-    const appData = app.getPath('appData')
-    this.configDir = join(appData, 'balance-monitor')
+    // 配置目录: ~/.balance-monitor
+    const homeDir = app.getPath('home')
+    this.configDir = join(homeDir, '.balance-monitor')
     this.backupDir = join(this.configDir, 'backups')
     this.configFile = join(this.configDir, 'configs.enc.json')
 
@@ -109,7 +117,7 @@ export class ConfigManager {
           this.logger.info(`成功加载 ${this.configs.size} 个配置`)
           return
         } catch (decryptError) {
-          console.error(decryptError);
+          console.error(decryptError)
 
           this.logger.warn('安全存储解密失败，尝试明文解析')
         }

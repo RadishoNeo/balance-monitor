@@ -36,6 +36,8 @@ export default defineConfig(
       '@typescript-eslint/explicit-function-return-type': 'off',
       //eslint(react-hooks/set-state-in-effect)
       'react-hooks/set-state-in-effect': 'off',
+      //eslintreact/no-unescaped-entities
+      'react/no-unescaped-entities': 'off'
     }
   }
 )

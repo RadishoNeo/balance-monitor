@@ -1,6 +1,16 @@
 import { app } from 'electron'
 import { join } from 'path'
-import { existsSync, appendFileSync, mkdirSync, statSync, renameSync, unlinkSync, readdirSync, truncateSync } from 'fs'
+import {
+  existsSync,
+  appendFileSync,
+  mkdirSync,
+  statSync,
+  renameSync,
+  unlinkSync,
+  readdirSync,
+  truncateSync,
+  readFileSync
+} from 'fs'
 
 export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'SUCCESS'
 
@@ -136,7 +146,7 @@ export class Logger {
     if (!existsSync(this.logFile)) return []
 
     try {
-      const content = require('fs').readFileSync(this.logFile, 'utf-8')
+      const content = readFileSync(this.logFile, 'utf-8')
       const lines = content.trim().split('\n').slice(-limit)
 
       return lines.map((line) => {
