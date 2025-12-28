@@ -1,5 +1,9 @@
 # Balance Monitor
 
+<div align="center">
+  <img src="resources/icon.png" alt="Balance Monitor Logo" width="128" height="128">
+</div>
+
 A cross-platform desktop application for monitoring balance data from API endpoints. Built with Electron, React, and TypeScript.
 
 ![Electron](https://img.shields.io/badge/Electron-39.2.6-47848F?logo=electron)

@@ -1,5 +1,9 @@
 # Balance Monitor - 余额监控器
 
+<div align="center">
+  <img src="resources/icon.png" alt="Balance Monitor Logo" width="128" height="128">
+</div>
+
 一个跨平台的桌面应用程序，用于监控API端点的余额数据。基于Electron、React和TypeScript构建。
 
 ![Electron](https://img.shields.io/badge/Electron-39.2.6-47848F?logo=electron)
