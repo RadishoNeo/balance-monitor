@@ -28,9 +28,12 @@
       "Bash(git show-ref:*)",
       "Bash(git log:*)",
       "Bash(git rm:*)",
-      "Bash(git ls-tree:*)"
+      "Bash(git ls-tree:*)",
+      "Bash(dir:*)"
     ],
-    "deny": ["Bash(npm run dev)"],
+    "deny": [
+      "Bash(npm run dev)"
+    ],
     "ask": []
   }
 }
