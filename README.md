@@ -188,6 +188,28 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
+## Changelog
+
+### [1.0.7] - 2025-12-28
+- **Documentation Enhancement**: Added Chinese documentation and application screenshots
+- **Screenshots**: Added dashboard, service configuration, and log viewer screenshots
+- **Update System**: Established standardized changelog and release notes system
+- [View Full Release Notes](doc/changelog/release-notes-v1.0.7.md)
+
+### [1.0.4] - 2025-12-28
+- **Core API Engine**: Improved configuration encryption/decryption logic
+- **Monitoring Sync**: Fixed monitoring state synchronization issues
+- **UI/UX Optimization**: Enhanced dashboard and configuration interfaces
+- [View Full Release Notes](doc/changelog/release-notes-v1.0.4.md)
+
+### [1.0.3] - 2025-12-28
+- **Initial Release**: Balance Monitor desktop application
+- **Core Features**: API monitoring, smart parsing, system tray notifications
+- **Multi-config Support**: Support for multiple API configurations
+- **Cross-platform**: Windows, macOS, and Linux support
+
+For complete version history, see [CHANGELOG.md](doc/changelog/CHANGELOG.md)
+
 ## 中文文档
 
 查看[中文文档](README_CN.md)获取中文版本的使用说明。

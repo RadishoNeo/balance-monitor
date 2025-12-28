@@ -185,3 +185,27 @@ npm run build
 **Cherry** - [GitHub个人主页](https://github.com/cherry-min)
 
 **项目主页**：https://github.com/cherry-min/balance-monitor
+
+---
+
+## 更新日志
+
+### [1.0.7] - 2025-12-28
+- **文档增强**: 添加中文文档和应用程序截图
+- **截图系统**: 添加仪表盘、服务配置和日志查看器截图
+- **更新系统**: 建立标准化的更新记录和发布说明系统
+- [查看完整发布说明](doc/changelog/release-notes-v1.0.7.md)
+
+### [1.0.4] - 2025-12-28
+- **核心API引擎**: 改进配置加密/解密逻辑
+- **监控状态同步**: 修复监控状态同步问题
+- **UI/UX优化**: 增强仪表盘和配置界面
+- [查看完整发布说明](doc/changelog/release-notes-v1.0.4.md)
+
+### [1.0.3] - 2025-12-28
+- **初始版本**: Balance Monitor桌面应用程序
+- **核心功能**: API监控、智能解析、系统托盘通知
+- **多配置支持**: 支持多个API配置
+- **跨平台**: 支持Windows、macOS和Linux
+
+查看完整版本历史，请参阅[CHANGELOG.md](doc/changelog/CHANGELOG.md)
