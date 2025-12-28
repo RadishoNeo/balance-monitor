@@ -7,6 +7,17 @@ A cross-platform desktop application for monitoring balance data from API endpoi
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-3178C6?logo=typescript)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
+## Screenshots
+
+### Dashboard Interface
+![Dashboard Interface](doc/images/dashboard.png)
+
+### Service Configuration Interface
+![Service Configuration Interface](doc/images/service_config.png)
+
+### Log Viewer Interface
+![Log Viewer Interface](doc/images/log.png)
+
 ## Features
 
 - 🔍 **API Monitoring**: Schedule and monitor balance data from any HTTP API endpoint
@@ -174,3 +185,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 **Cherry** - [GitHub Profile](https://github.com/cherry-min)
 
 **Project Homepage**: https://github.com/cherry-min/balance-monitor
+
+---
+
+## 中文文档
+
+查看[中文文档](README_CN.md)获取中文版本的使用说明。

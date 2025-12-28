@@ -11,6 +11,7 @@ import {
 } from 'fs'
 import { safeStorage } from 'electron'
 import { Logger } from './logger'
+import { v4 as uuidv4 } from 'uuid'
 
 export interface APIConfig {
   url: string
@@ -276,7 +277,7 @@ export class ConfigManager {
   createConfig(
     config: Omit<BalanceMonitorConfig, 'id' | 'createdAt' | 'updatedAt'>
   ): BalanceMonitorConfig {
-    const id = `config-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const id = uuidv4()
     const now = new Date().toISOString()
 
     const fullConfig: BalanceMonitorConfig = {

@@ -48,7 +48,7 @@ export class TrayManager {
 
     // 如果资源目录不存在，使用默认图标
     if (!existsSync(iconsDir)) {
-      return join(__dirname, '../../resources/icon.svg')
+      return join(__dirname, '../../resources/icon.png')
     }
 
     const iconMap: Record<string, string> = {
@@ -63,7 +63,7 @@ export class TrayManager {
 
     // 如果特定状态图标不存在，返回灰色
     if (!existsSync(iconPath)) {
-      return join(__dirname, '../../resources/icon.svg')
+      return join(__dirname, '../../resources/icon.png')
     }
 
     return iconPath
@@ -111,7 +111,7 @@ export class TrayManager {
   private emit(event: string): void {
     // 通过事件发射器通知主进程
     if (this.tray) {
-      ;(this.tray as any).emit(event)
+      ; (this.tray as any).emit(event)
     }
   }
 
