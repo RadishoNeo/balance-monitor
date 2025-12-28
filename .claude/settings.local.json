@@ -32,9 +32,7 @@
       "Bash(dir:*)",
       "Bash(move:*)"
     ],
-    "deny": [
-      "Bash(npm run dev)"
-    ],
+    "deny": ["Bash(npm run dev)"],
     "ask": []
   }
 }

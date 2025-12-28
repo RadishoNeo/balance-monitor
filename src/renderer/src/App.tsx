@@ -400,8 +400,8 @@ function App(): React.JSX.Element {
                       key={tab.key}
                       onClick={() => handleTabSwitch(tab.key as any)}
                       className={`flex items-center gap-2.5 px-6 py-2.5 text-sm font-bold transition-all duration-300 rounded-xl ${activeTab === tab.key
-                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 select-none'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
+                          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 select-none'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
                         }`}
                     >
                       <span className="text-lg">{tab.icon}</span>
@@ -508,7 +508,7 @@ function App(): React.JSX.Element {
                 <img
                   src={logo}
                   alt="Balance Monitor Logo"
-                  className="w-full h-full drop-shadow-xl transition-all duration-500 group-hover:rotate-[10deg] group-hover:scale-110"
+                  className="w-full h-full drop-shadow-xl transition-all duration-500 group-hover:rotate-10 group-hover:scale-110"
                 />
               </div>
               <div>
@@ -532,8 +532,8 @@ function App(): React.JSX.Element {
                   key={item.key}
                   onClick={() => setCurrentPage(item.key as PageType)}
                   className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${currentPage === item.key
-                    ? 'bg-card text-primary shadow-lg shadow-black/5 ring-1 ring-border/10 scale-105'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
+                      ? 'bg-card text-primary shadow-lg shadow-black/5 ring-1 ring-border/10 scale-105'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
                     }`}
                 >
                   <span className="text-lg">{item.icon}</span>

@@ -14,12 +14,15 @@ A cross-platform desktop application for monitoring balance data from API endpoi
 ## Screenshots
 
 ### Dashboard Interface
+
 ![Dashboard Interface](doc/images/dashboard.png)
 
 ### Service Configuration Interface
+
 ![Service Configuration Interface](doc/images/service_config.png)
 
 ### Log Viewer Interface
+
 ![Log Viewer Interface](doc/images/log.png)
 
 ## Features
@@ -195,18 +198,21 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## Changelog
 
 ### [1.0.7] - 2025-12-28
+
 - **Documentation Enhancement**: Added Chinese documentation and application screenshots
 - **Screenshots**: Added dashboard, service configuration, and log viewer screenshots
 - **Update System**: Established standardized changelog and release notes system
 - [View Full Release Notes](doc/changelog/release-notes-v1.0.7.md)
 
 ### [1.0.4] - 2025-12-28
+
 - **Core API Engine**: Improved configuration encryption/decryption logic
 - **Monitoring Sync**: Fixed monitoring state synchronization issues
 - **UI/UX Optimization**: Enhanced dashboard and configuration interfaces
 - [View Full Release Notes](doc/changelog/release-notes-v1.0.4.md)
 
 ### [1.0.3] - 2025-12-28
+
 - **Initial Release**: Balance Monitor desktop application
 - **Core Features**: API monitoring, smart parsing, system tray notifications
 - **Multi-config Support**: Support for multiple API configurations

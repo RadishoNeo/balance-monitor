@@ -34,9 +34,9 @@ function createWindow(): void {
     //生产环境
     ...(process.env.NODE_ENV === 'production'
       ? {
-        //无标题栏
-        titleBarStyle: 'hidden'
-      }
+          //无标题栏
+          titleBarStyle: 'hidden'
+        }
       : {}),
     //linux环境配置
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -69,8 +69,8 @@ function createWindow(): void {
       //测试环境允许打开devtool
       ...(process.env.NODE_ENV === 'development'
         ? {
-          devTools: true
-        }
+            devTools: true
+          }
         : {})
     }
   })
