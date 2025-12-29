@@ -131,7 +131,7 @@ const balanceList: VendorConfig[] = [
   {
     name: 'OpenRouter',
     logo: openrouterLogo,
-    url: 'https://openrouter.ai/api/v1/user/credits',
+    url: 'https://openrouter.ai/api/v1/credits',
     method: 'GET',
     auth: {
       type: 'Bearer',

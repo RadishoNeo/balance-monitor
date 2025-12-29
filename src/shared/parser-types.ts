@@ -10,7 +10,7 @@ export const PARSER_STRATEGIES = {
   AIHUBMIX: 'aihubmix',
   OPENROUTER: 'openrouter',
   VOLCENGINE: 'volcengine',
-  PPIO: 'ppio'
+  PPIO: 'ppio',
 } as const
 
 export type ParserType = (typeof PARSER_STRATEGIES)[keyof typeof PARSER_STRATEGIES]

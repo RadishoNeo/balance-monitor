@@ -30,9 +30,12 @@
       "Bash(git rm:*)",
       "Bash(git ls-tree:*)",
       "Bash(dir:*)",
-      "Bash(move:*)"
+      "Bash(move:*)",
+      "Bash(del:*)"
     ],
-    "deny": ["Bash(npm run dev)"],
+    "deny": [
+      "Bash(npm run dev)"
+    ],
     "ask": []
   }
 }
