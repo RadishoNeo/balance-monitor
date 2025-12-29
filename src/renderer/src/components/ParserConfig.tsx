@@ -42,7 +42,8 @@ export const ParserConfig: React.FC<ParserConfigProps> = ({
 
   // 初始化表单数据
   const [formData, setFormData] = React.useState(() => ({
-    parserType: (initialData as any)?.parserType || (parserFormState.parser as any)?.parserType || ''
+    parserType:
+      (initialData as any)?.parserType || (parserFormState.parser as any)?.parserType || ''
   }))
 
   // 更新策略类型
@@ -141,7 +142,9 @@ export const ParserConfig: React.FC<ParserConfigProps> = ({
               >
                 <div className="flex items-center gap-3">
                   <span className="text-xl">{strategy.icon}</span>
-                  <span className={`font-medium ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                  <span
+                    className={`font-medium ${isSelected ? 'text-primary' : 'text-foreground'}`}
+                  >
                     {strategy.label}
                   </span>
                 </div>

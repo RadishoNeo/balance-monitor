@@ -11,7 +11,7 @@ export class BalanceMonitorService {
       const response = await this.makeRequest(config)
 
       // 2. 使用策略模式解析响应
-      const parser = this.parserFactory.getParser(config.name)
+      const parser = await this.parserFactory.getParser(config.name)
       const balance = parser.parse(response)
 
       // 3. 应用阈值检查 (可以在此处根据 config.thresholds 调整 balance.status)

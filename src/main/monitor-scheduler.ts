@@ -275,7 +275,7 @@ export class MonitorScheduler {
     // 解析数据
     let parsed: ParsedBalance
     try {
-      parsed = this.balanceParser.parse(response.data, config.parser)
+      parsed = await this.balanceParser.parse(response.data, config.parser)
     } catch (error) {
       status.errorCount++
       status.lastRun = new Date().toISOString()

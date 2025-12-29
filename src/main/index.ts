@@ -257,7 +257,7 @@ function setupIPCHandlers(): void {
   // 解析器测试
   ipcMain.handle('test-parser', async (_event, data, parserConfig) => {
     const parser = new BalanceParser()
-    return parser.testParse(data, parserConfig)
+    return await parser.testParse(data, parserConfig)
   })
 
   // 日志相关

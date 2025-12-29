@@ -202,7 +202,11 @@ export const useConfigManager = () => {
 
   // 从表单状态转换
   const fromFormState = useCallback(
-    (formState: ConfigFormState, existingId?: string, existingConfig?: BalanceMonitorConfig): Partial<BalanceMonitorConfig> => {
+    (
+      formState: ConfigFormState,
+      existingId?: string,
+      existingConfig?: BalanceMonitorConfig
+    ): Partial<BalanceMonitorConfig> => {
       return {
         id: existingId,
         name: formState.name,

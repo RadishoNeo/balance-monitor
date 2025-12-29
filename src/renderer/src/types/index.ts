@@ -63,7 +63,6 @@ export interface AuthConfig {
   headerKey?: 'Authorization' | 'X-Api-Key' | string
 }
 
-
 // 以下类型应从 preload 导入
 export interface APIRequest {
   url: string

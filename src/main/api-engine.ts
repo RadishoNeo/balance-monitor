@@ -129,38 +129,47 @@ export class APIEngine {
     })
   }
 
-  private buildHeaders(headers: any[], auth?: any): Record<string, string> {
+  private buildHeaders(
+    headers: Array<{ key: string; value: string }> = [],
+    auth?: {
+      type?: 'Bearer' | 'Basic' | string
+      apiKey?: string
+      headerKey?: string
+    }
+  ): Record<string, string> {
     const result: Record<string, string> = {
       'Content-Type': 'application/json',
       'User-Agent': 'BalanceMonitor/1.0'
     }
 
-    // 1. 处理常规 Headers
-    if (Array.isArray(headers)) {
-      headers.forEach((header) => {
-        if (header.key && header.value) {
-          result[header.key] = header.value
-        }
-      })
+    // 普通 headers
+    for (const { key, value } of headers) {
+      if (key && value) {
+        result[key] = value
+      }
     }
 
-    // 2. 处理 Auth 配置 (DeepSeek, Moonshot 等模板使用)
-    if (auth && auth.apiKey) {
-      const headerKey = auth.headerKey || 'Authorization'
-      if (auth.type === 'Bearer') {
-        result[headerKey] = `Bearer ${auth.apiKey}`
-      } else if (auth.type === 'Basic') {
-        // 如果已经是 base64 或者是 raw username:password
-        if (!auth.apiKey.includes(':') && /^[A-Za-z0-9+/=]+$/.test(auth.apiKey)) {
-          result[headerKey] = `Basic ${auth.apiKey}`
-        } else {
-          const encoded = Buffer.from(auth.apiKey).toString('base64')
-          result[headerKey] = `Basic ${encoded}`
-        }
-      } else {
-        // Custom 或其他情况直接设置
-        result[headerKey] = auth.apiKey
+    if (!auth?.apiKey) return result
+
+    const headerKey = auth.headerKey ?? 'Authorization'
+    const apiKey = auth.apiKey
+
+    switch (auth.type) {
+      case 'Bearer':
+        result[headerKey] = `Bearer ${apiKey}`
+        break
+
+      case 'Basic': {
+        const isBase64 = !apiKey.includes(':') && /^[A-Za-z0-9+/=]+$/.test(apiKey)
+
+        const encoded = isBase64 ? apiKey : Buffer.from(apiKey).toString('base64')
+
+        result[headerKey] = `Basic ${encoded}`
+        break
       }
+
+      default:
+        result[headerKey] = apiKey
     }
 
     return result

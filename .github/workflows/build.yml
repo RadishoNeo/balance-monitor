@@ -60,8 +60,8 @@ jobs:
       - name: Build unpacked version
         run: npm run build:unpack
 
-      - name: Upload unpacked build (disabled due to storage quota)
-        if: false # 暂时禁用上传以解决存储配额问题
+      - name: Upload unpacked build
+        if: true
         uses: actions/upload-artifact@v4
         with:
           name: unpacked-build

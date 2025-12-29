@@ -1,24 +1,15 @@
-// 标准化余额信息接口
-export interface StandardBalance {
-  currency: string // 货币代码
-  available_balance: number // 可用余额（标准化后的总余额）
-  total_balance?: number // 总余额（可选）
-  granted_balance?: number // 赠送余额（可选）
-  topped_up_balance?: number // 充值余额（可选）
-  cash_balance?: number // 现金余额（可选）
-  voucher_balance?: number // 代金券余额（可选）
-  total_credits?: number // 总积分/额度（可选）
-  total_usage?: number // 已使用额度（可选）
-  status: 'active' | 'inactive' | 'warning' | 'danger'
-  last_updated: string
-  meta: Record<string, any> // 原始数据和其他厂商特有字段
-}
+// 使用共享的插件系统类型定义
+import type { StandardBalance as SharedStandardBalance } from '@shared/parser-plugins'
+export type { ParserPlugin } from '@shared/parser-plugins'
 
-// 解析策略接口
+// 解析策略接口（兼容现有代码）
 export interface BalanceParser {
-  parse(response: any): StandardBalance
+  parse(response: any): SharedStandardBalance
   supports(vendor: string): boolean
 }
+
+// 重新导出 StandardBalance 类型
+export type StandardBalance = SharedStandardBalance
 // 厂商模板配置（与 BalanceMonitorConfig 接口对齐）
 export interface VendorConfig {
   name: string

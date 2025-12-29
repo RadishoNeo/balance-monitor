@@ -52,6 +52,30 @@ const balanceList: VendorConfig[] = [
     isPreset: true
   },
   {
+    name: '欧派云',
+    logo: 'src/assets/providers/ppio.png',
+    url: 'https://api.ppinfra.com/v3/user',
+    method: 'GET',
+    auth: {
+      type: 'Bearer',
+      apiKey: '',
+      headerKey: 'Authorization'
+    },
+    timeout: 10000,
+    parser: {
+      parserType: 'ppio'
+    },
+    monitoring: {
+      enabled: false,
+      interval: 30
+    },
+    thresholds: {
+      warning: 50,
+      danger: 10
+    },
+    isPreset: true
+  },
+  {
     name: 'Moonshot (AI)',
     logo: 'src/assets/providers/moonshot.png',
     url: 'https://api.moonshot.ai/v1/users/me/balance',

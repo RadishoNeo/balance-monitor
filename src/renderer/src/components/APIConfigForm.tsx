@@ -183,10 +183,11 @@ export const APIConfigForm: React.FC<APIConfigFormProps> = ({
                   key={template.name}
                   type="button"
                   onClick={() => handleTemplateChange(template.name)}
-                  className={`px-4 py-3 rounded-xl border text-sm font-bold transition-all duration-300 flex flex-col items-center gap-2 ${formData.name === template.name
+                  className={`px-4 py-3 rounded-xl border text-sm font-bold transition-all duration-300 flex flex-col items-center gap-2 ${
+                    formData.name === template.name
                       ? 'bg-primary/10 border-primary text-primary shadow-inner'
                       : 'bg-muted/20 border-border/50 text-muted-foreground hover:border-primary/30 hover:bg-muted/40'
-                    }`}
+                  }`}
                 >
                   {template.logo ? (
                     <img

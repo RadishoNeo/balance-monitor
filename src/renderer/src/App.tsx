@@ -282,17 +282,17 @@ function App(): React.JSX.Element {
           // 准备 APIConfigForm 的初始数据（扁平结构）
           const apiFormInitialData = editingConfig
             ? {
-              name: editingConfig.name,
-              url: editingConfig.api?.url || '',
-              method: editingConfig.api?.method || 'GET',
-              auth: editingConfig.api?.auth || {
-                type: 'Bearer' as const,
-                apiKey: '',
-                headerKey: 'Authorization' as const
-              },
-              timeout: editingConfig.api?.timeout || 10000,
-              body: editingConfig.api?.body || ''
-            }
+                name: editingConfig.name,
+                url: editingConfig.api?.url || '',
+                method: editingConfig.api?.method || 'GET',
+                auth: editingConfig.api?.auth || {
+                  type: 'Bearer' as const,
+                  apiKey: '',
+                  headerKey: 'Authorization' as const
+                },
+                timeout: editingConfig.api?.timeout || 10000,
+                body: editingConfig.api?.body || ''
+              }
             : undefined
 
           // 处理标签页切换（保存当前标签页的数据）
@@ -371,10 +371,11 @@ function App(): React.JSX.Element {
                     <button
                       key={tab.key}
                       onClick={() => handleTabSwitch(tab.key as any)}
-                      className={`flex items-center gap-2.5 px-6 py-2.5 text-sm font-bold transition-all duration-300 rounded-xl ${activeTab === tab.key
-                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 select-none'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
-                        }`}
+                      className={`flex items-center gap-2.5 px-6 py-2.5 text-sm font-bold transition-all duration-300 rounded-xl ${
+                        activeTab === tab.key
+                          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 select-none'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
+                      }`}
                     >
                       <span className="text-lg">{tab.icon}</span>
                       {tab.label}
@@ -426,7 +427,7 @@ function App(): React.JSX.Element {
               onNewConfig={handleNewConfig}
               onEditConfig={handleEditConfig}
               onDeleteConfig={handleDeleteConfig}
-              onSetActiveConfig={async () => { }}
+              onSetActiveConfig={async () => {}}
               onExportConfig={handleExportConfig}
               onImportConfig={handleImportConfig}
               onToggleMonitoring={async (id, enabled) => {
@@ -479,10 +480,11 @@ function App(): React.JSX.Element {
                 <button
                   key={item.key}
                   onClick={() => setCurrentPage(item.key as PageType)}
-                  className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${currentPage === item.key
-                    ? 'bg-card text-primary shadow-lg shadow-black/5 ring-1 ring-border/10 scale-105'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
-                    }`}
+                  className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                    currentPage === item.key
+                      ? 'bg-card text-primary shadow-lg shadow-black/5 ring-1 ring-border/10 scale-105'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
+                  }`}
                 >
                   <span className="text-lg">{item.icon}</span>
                   {item.label}

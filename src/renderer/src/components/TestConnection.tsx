@@ -199,11 +199,8 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
               <option value="openrouter">OpenRouter</option>
               <option value="volcengine">VolcEngine (火山引擎)</option>
             </select>
-            <p className="text-xs text-muted-foreground mt-1">
-              选择对应服务提供商的解析策略
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">选择对应服务提供商的解析策略</p>
           </div>
-
 
           <button
             onClick={handleTestParser}
