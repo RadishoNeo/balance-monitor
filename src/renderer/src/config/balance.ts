@@ -5,7 +5,7 @@ export type { VendorConfig as BalanceTemplateConfig }
 const balanceList: VendorConfig[] = [
   {
     name: 'DeepSeek',
-    icon: '🧠',
+    logo: 'src/assets/providers/deepseek.png',
     url: 'https://api.deepseek.com/user/balance',
     method: 'GET',
     auth: {
@@ -29,7 +29,7 @@ const balanceList: VendorConfig[] = [
   },
   {
     name: 'Moonshot (CN)',
-    icon: '🌙',
+    logo: 'src/assets/providers/moonshot.png',
     url: 'https://api.moonshot.cn/v1/users/me/balance',
     method: 'GET',
     auth: {
@@ -53,7 +53,7 @@ const balanceList: VendorConfig[] = [
   },
   {
     name: 'Moonshot (AI)',
-    icon: '🌙',
+    logo: 'src/assets/providers/moonshot.png',
     url: 'https://api.moonshot.ai/v1/users/me/balance',
     method: 'GET',
     auth: {
@@ -77,7 +77,7 @@ const balanceList: VendorConfig[] = [
   },
   {
     name: 'AIHubMix',
-    icon: '🔌',
+    logo: 'src/assets/providers/aihubmix.png',
     url: 'https://api.aihubmix.com/v1/user/usage',
     method: 'GET',
     auth: {
@@ -100,7 +100,7 @@ const balanceList: VendorConfig[] = [
   },
   {
     name: 'OpenRouter',
-    icon: '🌐',
+    logo: 'src/assets/providers/openrouter.png',
     url: 'https://openrouter.ai/api/v1/user/credits',
     method: 'GET',
     auth: {
@@ -123,7 +123,7 @@ const balanceList: VendorConfig[] = [
   },
   {
     name: 'VolcEngine',
-    icon: '🌋',
+    logo: 'src/assets/providers/volcengine.png',
     url: 'https://volcengine.com/api/balance',
     method: 'GET',
     auth: {

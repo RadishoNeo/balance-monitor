@@ -1,21 +1,7 @@
 import { Logger } from './logger'
+import { PARSER_STRATEGIES, type ParserConfig } from '../shared/parser-types'
 
-export interface BalanceInfoMapping {
-  currency: string
-  total_balance: string
-  granted_balance?: string
-  topped_up_balance?: string
-}
-
-export interface ParserConfig {
-  balancePath?: string
-  currencyPath?: string
-  availablePath?: string
-  isAvailablePath?: string
-  balanceMappings?: BalanceInfoMapping[]
-  customParser?: string
-  parserType?: string
-}
+export type { ParserType, ParserConfig } from '../shared/parser-types'
 
 export interface ParsedBalance {
   balance: number
@@ -63,7 +49,7 @@ class DeepSeekStrategy extends BaseStrategy {
     }
   }
   supports(type: string): boolean {
-    return type.toLowerCase() === 'deepseek'
+    return type.toLowerCase() === PARSER_STRATEGIES.DEEPSEEK
   }
 }
 
@@ -81,7 +67,7 @@ class MoonshotStrategy extends BaseStrategy {
     }
   }
   supports(type: string): boolean {
-    return type.toLowerCase() === 'moonshot'
+    return type.toLowerCase() === PARSER_STRATEGIES.MOONSHOT
   }
 }
 
@@ -97,7 +83,7 @@ class AIHubMixStrategy extends BaseStrategy {
     }
   }
   supports(type: string): boolean {
-    return type.toLowerCase() === 'aihubmix'
+    return type.toLowerCase() === PARSER_STRATEGIES.AIHUBMIX
   }
 }
 
@@ -115,7 +101,7 @@ class OpenRouterStrategy extends BaseStrategy {
     }
   }
   supports(type: string): boolean {
-    return type.toLowerCase() === 'openrouter'
+    return type.toLowerCase() === PARSER_STRATEGIES.OPENROUTER
   }
 }
 
@@ -132,7 +118,7 @@ class VolcEngineStrategy extends BaseStrategy {
   }
   supports(type: string): boolean {
     const t = type.toLowerCase()
-    return t === 'volcengine' || t === 'volcano' || t === '火山'
+    return t === PARSER_STRATEGIES.VOLCENGINE || t === 'volcano' || t === '火山'
   }
 }
 
@@ -152,143 +138,23 @@ export class BalanceParser {
   }
 
   parse(data: any, config: ParserConfig): ParsedBalance {
-    this.logger.debug(`[Parser] 开始解析数据. parserType: ${config.parserType || 'none'}`)
+    this.logger.debug(`[Parser] 开始解析数据. parserType: ${config.parserType}`)
 
-    // 1. 如果指定了 parserType，使用策略模式
-    if (config.parserType) {
-      const strategy = this.strategies.find((s) => s.supports(config.parserType!))
-      if (strategy) {
-        this.logger.info(`[Parser] 使用策略: ${config.parserType}`)
-        return strategy.parse(data)
-      }
+    if (!data) {
+      throw new Error('解析失败: API 响应数据为空')
     }
 
-    // 2. 兜底：原始解析逻辑 (为了兼容已有配置)
-    try {
-      if (!data) throw new Error('解析失败: API 响应数据为空')
-
-      // 自定义解析器优先
-      if (config.customParser && config.customParser.trim()) {
-        return this.parseCustom(data, config.customParser)
-      }
-
-      // 字段映射逻辑
-      if (
-        config.balanceMappings &&
-        Array.isArray(config.balanceMappings) &&
-        config.balanceMappings.length > 0
-      ) {
-        return this.parseByMappings(data, config)
-      }
-
-      // 传统单路径解析
-      if (config.balancePath && config.balancePath.trim()) {
-        return this.parseByPathRule(data, config)
-      }
-
-      throw new Error('未定义解析规则')
-    } catch (error: any) {
-      this.logger.error(`[Parser] 解析失败: ${error.message}`)
-      throw error
+    // 策略模式: 根据 parserType 选择对应的解析策略
+    const strategy = this.strategies.find((s) => s.supports(config.parserType))
+    if (strategy) {
+      this.logger.info(`[Parser] 使用策略: ${config.parserType}`)
+      return strategy.parse(data)
     }
+
+    this.logger.error('[Parser] 未找到匹配的解析策略')
+    throw new Error(`不支持的解析类型: ${config.parserType}. 请指定有效的 parserType`)
   }
 
-  private parseByMappings(data: any, config: ParserConfig): ParsedBalance {
-    let totalBalance = 0
-    let grantedBalance = 0
-    let toppedUpBalance = 0
-    let currency = '¥'
-
-    for (const mapping of config.balanceMappings!) {
-      if (mapping.total_balance) {
-        const val = this.getValueByPath(data, mapping.total_balance)
-        totalBalance += this.convertToNumber(val)
-      }
-      if (mapping.granted_balance) {
-        const val = this.getValueByPath(data, mapping.granted_balance)
-        grantedBalance += this.convertToNumber(val)
-      }
-      if (mapping.topped_up_balance) {
-        const val = this.getValueByPath(data, mapping.topped_up_balance)
-        toppedUpBalance += this.convertToNumber(val)
-      }
-      if (mapping.currency && !currency) {
-        const curVal = this.getValueByPath(data, mapping.currency)
-        currency = curVal ? String(curVal) : mapping.currency
-      }
-    }
-
-    return {
-      balance: totalBalance,
-      grantedBalance,
-      toppedUpBalance,
-      currency: currency || '¥',
-      isAvailable: totalBalance > 0,
-      raw: data
-    }
-  }
-
-  private parseByPathRule(data: any, config: ParserConfig): ParsedBalance {
-    const balanceVal = this.getValueByPath(data, config.balancePath!)
-    const num = this.convertToNumber(balanceVal)
-    let cur = '¥'
-    if (config.currencyPath) {
-      const v = this.getValueByPath(data, config.currencyPath)
-      cur = v ? String(v) : '¥'
-    }
-    return {
-      balance: num,
-      currency: cur,
-      isAvailable: num > 0,
-      raw: data
-    }
-  }
-
-  private convertToNumber(val: any): number {
-    if (typeof val === 'number') return val
-    if (typeof val === 'string') {
-      const cleaned = val.replace(/[^\d.-]/g, '')
-      return parseFloat(cleaned) || 0
-    }
-    return 0
-  }
-
-  private getValueByPath(data: any, path: string): any {
-    if (!path || !data) return null
-    const tokens = path.match(/[^.[\]]+|\[(\d+)\]/g) || []
-    let current = data
-    for (const token of tokens) {
-      if (token.startsWith('[')) {
-        current = current[parseInt(token.slice(1, -1))]
-      } else {
-        current = current[token]
-      }
-      if (current === undefined || current === null) return null
-    }
-    return current
-  }
-
-  private parseCustom(data: any, code: string): ParsedBalance {
-    try {
-      const fn = new Function(
-        'data',
-        `
-        "use strict";
-        ${code}
-        return result;
-      `
-      )
-      const result = fn(data)
-      return {
-        balance: result.balance,
-        currency: result.currency || '¥',
-        isAvailable: result.isAvailable !== false,
-        raw: data
-      }
-    } catch (e: any) {
-      throw new Error(`自定义脚本执行失败: ${e.message}`)
-    }
-  }
 
   testParse(data: any, config: ParserConfig) {
     try {

@@ -186,10 +186,7 @@ export const useConfigManager = () => {
         timeout: config.api.timeout || 10000
       },
       parser: {
-        balancePath: config.parser.balancePath || '',
-        currencyPath: config.parser.currencyPath || '',
-        availablePath: config.parser.availablePath || '',
-        customParser: config.parser.customParser || ''
+        parserType: config.parser.parserType || ''
       },
       monitoring: {
         enabled: config.monitoring.enabled,
@@ -205,10 +202,11 @@ export const useConfigManager = () => {
 
   // 从表单状态转换
   const fromFormState = useCallback(
-    (formState: ConfigFormState, existingId?: string): Partial<BalanceMonitorConfig> => {
+    (formState: ConfigFormState, existingId?: string, existingConfig?: BalanceMonitorConfig): Partial<BalanceMonitorConfig> => {
       return {
         id: existingId,
         name: formState.name,
+        logo: existingConfig?.logo, // 保留现有的logo字段
         api: {
           url: formState.api.url,
           method: formState.api.method,
@@ -217,10 +215,7 @@ export const useConfigManager = () => {
           timeout: formState.api.timeout
         },
         parser: {
-          balancePath: formState.parser.balancePath,
-          currencyPath: formState.parser.currencyPath || undefined,
-          availablePath: formState.parser.availablePath || undefined,
-          customParser: formState.parser.customParser || undefined
+          parserType: formState.parser.parserType || ''
         },
         monitoring: {
           enabled: formState.monitoring.enabled,

@@ -19,11 +19,10 @@ export interface BalanceParser {
   parse(response: any): StandardBalance
   supports(vendor: string): boolean
 }
-
 // 厂商模板配置（与 BalanceMonitorConfig 接口对齐）
 export interface VendorConfig {
   name: string
-  icon?: string
+  logo: string // Logo图片路径，如 'src/assets/providers/deepseek.png'
   url: string
   method: 'GET' | 'POST'
   auth: {
@@ -34,7 +33,7 @@ export interface VendorConfig {
   timeout?: number
   body?: any
   parser: {
-    parserType: 'deepseek' | 'moonshot' | 'aihubmix' | 'openrouter' | 'volcengine'
+    parserType: import('@shared/parser-types').ParserType
   }
   monitoring: {
     enabled: boolean

@@ -127,9 +127,19 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${config.monitoring.enabled ? 'bg-primary/10' : 'bg-muted'}`}
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner overflow-hidden ${config.monitoring.enabled ? 'bg-primary/10' : 'bg-muted'}`}
                     >
-                      {config.monitoring.enabled ? '🟢' : '⚪'}
+                      {config.logo ? (
+                        <img
+                          src={config.logo}
+                          alt={config.name}
+                          className="w-10 h-10 object-contain"
+                        />
+                      ) : config.monitoring.enabled ? (
+                        '🟢'
+                      ) : (
+                        '⚪'
+                      )}
                     </div>
                     <div>
                       <h3 className="font-black text-lg text-foreground group-hover:text-primary transition-colors leading-none mb-1">

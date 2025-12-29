@@ -1,5 +1,5 @@
 import { BalanceMonitorConfig } from '../types'
-import { BalanceTemplateConfig } from '../config/balace'
+import { BalanceTemplateConfig } from '../config/balance'
 
 // 适配函数：将模板配置转换为应用程序使用的配置
 export function adaptTemplateConfig(
@@ -7,6 +7,7 @@ export function adaptTemplateConfig(
 ): Partial<BalanceMonitorConfig> {
   return {
     name: template.name,
+    logo: template.logo,
     url: template.url,
     method: template.method,
     auth: template.auth
@@ -15,22 +16,9 @@ export function adaptTemplateConfig(
 
 // 适配函数：将应用程序配置转换为可用于解析器的格式
 export function getParserConfig(config: BalanceMonitorConfig): any {
-  const parserConfig: any = {
-    balancePath: config.parser.balancePath,
-    currencyPath: config.parser.currencyPath,
-    availablePath: config.parser.availablePath,
-    customParser: config.parser.customParser
+  return {
+    parserType: config.parser.parserType
   }
-
-  // 如果存在新的字段映射，也包含它们
-  if (config.parser.isAvailablePath) {
-    parserConfig.isAvailablePath = config.parser.isAvailablePath
-  }
-  if (config.parser.balanceMappings) {
-    parserConfig.balanceMappings = config.parser.balanceMappings
-  }
-
-  return parserConfig
 }
 
 // 兼容性的表单状态转换

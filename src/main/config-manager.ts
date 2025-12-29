@@ -12,6 +12,7 @@ import {
 import { safeStorage } from 'electron'
 import { Logger } from './logger'
 import { v4 as uuidv4 } from 'uuid'
+import type { ParserConfig } from './balance-parser'
 
 export interface APIConfig {
   url: string
@@ -20,23 +21,6 @@ export interface APIConfig {
   body?: string
   timeout?: number
   auth?: any
-}
-
-export interface BalanceInfoMapping {
-  currency: string
-  total_balance: string
-  granted_balance?: string
-  topped_up_balance?: string
-}
-
-export interface ParserConfig {
-  balancePath?: string
-  currencyPath?: string
-  availablePath?: string
-  isAvailablePath?: string
-  balanceMappings?: BalanceInfoMapping[]
-  customParser?: string
-  parserType?: string // 新增：用于策略模式
 }
 
 export interface MonitoringConfig {
@@ -474,14 +458,10 @@ export class ConfigManager {
       errors.push('请求方法必须是GET或POST')
     }
 
-    const hasBalancePath = config.parser.balancePath && config.parser.balancePath.trim().length > 0
-    const hasMappings = config.parser.balanceMappings && config.parser.balanceMappings.length > 0
-    const hasCustomParser =
-      config.parser.customParser && config.parser.customParser.trim().length > 0
     const hasParserType = config.parser.parserType && config.parser.parserType.trim().length > 0
 
-    if (!hasBalancePath && !hasMappings && !hasCustomParser && !hasParserType) {
-      errors.push('余额解析规则不能为空（必须配置解析路径、字段映射、自定义脚本或策略类型）')
+    if (!hasParserType) {
+      errors.push('必须选择一个解析器策略类型（如: deepseek, moonshot, aihubmix等）')
     }
 
     if (config.monitoring.interval < 5) {

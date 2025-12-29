@@ -20,10 +20,7 @@ export interface ConfigFormState {
     timeout: number
   }
   parser: {
-    balancePath: string
-    currencyPath: string
-    availablePath: string
-    customParser: string
+    parserType: string
   }
   monitoring: {
     enabled: boolean
@@ -66,13 +63,6 @@ export interface AuthConfig {
   headerKey?: 'Authorization' | 'X-Api-Key' | string
 }
 
-// 响应字段映射类型
-export interface BalanceInfoMapping {
-  currency: string | 'CNY' // 默认值
-  total_balance: string
-  granted_balance: string
-  topped_up_balance: string
-}
 
 // 以下类型应从 preload 导入
 export interface APIRequest {
@@ -92,15 +82,8 @@ export interface APIResponse {
   responseTime: number
 }
 
-export interface ParserConfig {
-  balancePath: string
-  currencyPath?: string
-  availablePath?: string
-  isAvailablePath?: string
-  customParser?: string
-  parserType?: string // 新增：用于策略模式
-  balanceMappings?: BalanceInfoMapping[]
-}
+export type ParserConfig = import('@shared/parser-types').ParserConfig
+export type ParserType = import('@shared/parser-types').ParserType
 
 export interface ParsedBalance {
   balance: number
@@ -135,6 +118,7 @@ export interface APIConfig {
 export interface BalanceMonitorConfig {
   id: string
   name: string
+  logo?: string // Logo图片路径，如 'src/assets/providers/deepseek.png'
   url?: string // 扁平化配置字段
   method?: 'GET' | 'POST'
   auth?: AuthConfig
@@ -149,14 +133,7 @@ export interface BalanceMonitorConfig {
     auth?: AuthConfig // 新增认证配置
   }
   parser: {
-    isAvailablePath?: string // 是否可用字段路径
-    balanceMappings?: BalanceInfoMapping[] // 余额信息映射数组
-    // 保留旧版本兼容性
-    balancePath?: string
-    currencyPath?: string
-    availablePath?: string
-    customParser?: string
-    parserType?: string // 新增：用于策略模式
+    parserType: string // 策略类型标识
   }
   monitoring: MonitoringConfig
   thresholds: ThresholdConfig
@@ -164,10 +141,6 @@ export interface BalanceMonitorConfig {
   updatedAt: string
   enabled: boolean
   isPreset?: boolean // 标识是否为预设配置
-  response?: {
-    is_available: string
-    balance_infos: BalanceInfoMapping[]
-  }
 }
 
 export interface MonitorStatus {

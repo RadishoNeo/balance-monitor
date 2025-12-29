@@ -195,9 +195,18 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
                           {styleInfo.statusText}
                         </span>
                       </div>
-                      <h3 className="text-lg font-black tracking-tight truncate pr-4 text-foreground">
-                        {config?.name || '未知服务'}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        {config?.logo && (
+                          <img
+                            src={config.logo}
+                            alt={config.name}
+                            className="w-6 h-6 object-contain"
+                          />
+                        )}
+                        <h3 className="text-lg font-black tracking-tight truncate pr-4 text-foreground">
+                          {config?.name || '未知服务'}
+                        </h3>
+                      </div>
                     </div>
                     <div
                       className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-xl shadow-inner ${

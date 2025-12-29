@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { APIRequest, ParserConfig } from '../types'
+import { APIRequest, ParserConfig, type ParserType } from '../types'
 import { toast } from 'sonner'
 
 interface TestConnectionProps {
@@ -15,12 +15,9 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
     headers: [],
     timeout: 10000
   })
-  const [parserConfig, setParserConfig] = useState<ParserConfig>({
-    balancePath: '',
-    currencyPath: '',
-    availablePath: '',
-    customParser: ''
-  })
+  const [parserConfig, setParserConfig] = useState<ParserConfig>(() => ({
+    parserType: 'deepseek' as ParserType
+  }))
   const [loading, setLoading] = useState(false)
 
   const handleTestAPI = async () => {
@@ -52,8 +49,8 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
       return
     }
 
-    if (!parserConfig.balancePath && !parserConfig.customParser) {
-      toast.error('请输入解析路径或自定义解析器')
+    if (!parserConfig.parserType) {
+      toast.error('请选择一个解析器策略')
       return
     }
 
@@ -187,66 +184,26 @@ export const TestConnection: React.FC<TestConnectionProps> = ({ onTestAPI, onTes
           <div className="text-lg font-medium text-foreground">步骤2: 配置解析器</div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-foreground">余额解析路径</label>
-            <input
-              type="text"
-              value={parserConfig.balancePath}
+            <label className="block text-sm font-medium mb-1 text-foreground">解析器策略</label>
+            <select
+              value={parserConfig.parserType}
               onChange={(e) =>
-                setParserConfig((prev) => ({ ...prev, balancePath: e.target.value }))
+                setParserConfig((prev) => ({ ...prev, parserType: e.target.value as ParserType }))
               }
-              placeholder="balance_infos[0].total_balance"
-              className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
-            />
+              className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            >
+              <option value="">请选择</option>
+              <option value="deepseek">DeepSeek</option>
+              <option value="moonshot">Moonshot (月之暗面)</option>
+              <option value="aihubmix">AIHubMix</option>
+              <option value="openrouter">OpenRouter</option>
+              <option value="volcengine">VolcEngine (火山引擎)</option>
+            </select>
             <p className="text-xs text-muted-foreground mt-1">
-              示例: balance, user.balance, items[0].value
+              选择对应服务提供商的解析策略
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-sm font-medium mb-1 text-foreground">
-                货币路径 (可选)
-              </label>
-              <input
-                type="text"
-                value={parserConfig.currencyPath}
-                onChange={(e) =>
-                  setParserConfig((prev) => ({ ...prev, currencyPath: e.target.value }))
-                }
-                placeholder="balance_infos[0].currency"
-                className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-foreground">
-                可用状态路径 (可选)
-              </label>
-              <input
-                type="text"
-                value={parserConfig.availablePath}
-                onChange={(e) =>
-                  setParserConfig((prev) => ({ ...prev, availablePath: e.target.value }))
-                }
-                placeholder="is_available"
-                className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1 text-foreground">
-              自定义解析器 (可选)
-            </label>
-            <textarea
-              value={parserConfig.customParser}
-              onChange={(e) =>
-                setParserConfig((prev) => ({ ...prev, customParser: e.target.value }))
-              }
-              placeholder="const result = { balance: data.balance, currency: 'CNY', isAvailable: true }; return result;"
-              rows={4}
-              className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
-            />
-          </div>
 
           <button
             onClick={handleTestParser}
