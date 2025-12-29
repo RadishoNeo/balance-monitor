@@ -221,9 +221,9 @@ export class ConfigManager {
     try {
       const files = existsSync(this.backupDir)
         ? readdirSync(this.backupDir).map((f: string) => ({
-          name: f,
-          time: statSync(join(this.backupDir, f)).mtime
-        }))
+            name: f,
+            time: statSync(join(this.backupDir, f)).mtime
+          }))
         : []
 
       if (files.length > 10) {
@@ -430,7 +430,11 @@ export class ConfigManager {
       const data = JSON.parse(jsonString)
 
       // 验证必要字段
-      const hasValidParser = data.parser?.balancePath || data.parser?.parserType || data.parser?.balanceMappings || data.parser?.customParser
+      const hasValidParser =
+        data.parser?.balancePath ||
+        data.parser?.parserType ||
+        data.parser?.balanceMappings ||
+        data.parser?.customParser
       if (!data.name || !data.api?.url || !hasValidParser) {
         throw new Error('配置缺少必要字段')
       }
@@ -501,12 +505,12 @@ export class ConfigManager {
     const lastUpdate =
       configs.length > 0
         ? configs.reduce(
-          (latest, c) => {
-            const time = new Date(c.updatedAt).getTime()
-            return !latest || time > new Date(latest).getTime() ? c.updatedAt : latest
-          },
-          null as string | null
-        )
+            (latest, c) => {
+              const time = new Date(c.updatedAt).getTime()
+              return !latest || time > new Date(latest).getTime() ? c.updatedAt : latest
+            },
+            null as string | null
+          )
         : null
 
     return {

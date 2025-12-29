@@ -15,8 +15,8 @@ win:
   executableName: balance-monitor
   icon: resources/icon.ico
 nsis:
-  installerIcon: resources/icon.ico      
-  uninstallerIcon: resources/icon.ico 
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}

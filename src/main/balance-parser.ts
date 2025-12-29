@@ -28,31 +28,31 @@ export interface ParsedBalance {
 
 // 策略接口
 interface IBalanceStrategy {
-  parse(data: any): ParsedBalance;
-  supports(type: string): boolean;
+  parse(data: any): ParsedBalance
+  supports(type: string): boolean
 }
 
 // 基础策略类
 abstract class BaseStrategy implements IBalanceStrategy {
-  abstract parse(data: any): ParsedBalance;
-  abstract supports(type: string): boolean;
+  abstract parse(data: any): ParsedBalance
+  abstract supports(type: string): boolean
 
   protected standardizeCurrency(currency: string): string {
     const currencyMap: Record<string, string> = {
       '¥': 'CNY',
       '￥': 'CNY',
-      '$': 'USD',
+      $: 'USD',
       '€': 'EUR',
       '£': 'GBP'
-    };
-    return currencyMap[currency] || currency;
+    }
+    return currencyMap[currency] || currency
   }
 }
 
 // DeepSeek 策略
 class DeepSeekStrategy extends BaseStrategy {
   parse(response: any): ParsedBalance {
-    const balanceInfo = response.balance_infos?.[0] || {};
+    const balanceInfo = response.balance_infos?.[0] || {}
     return {
       balance: parseFloat(balanceInfo.total_balance || 0),
       currency: this.standardizeCurrency(balanceInfo.currency || 'CNY'),
@@ -60,17 +60,17 @@ class DeepSeekStrategy extends BaseStrategy {
       grantedBalance: parseFloat(balanceInfo.granted_balance || 0),
       toppedUpBalance: parseFloat(balanceInfo.topped_up_balance || 0),
       raw: response
-    };
+    }
   }
   supports(type: string): boolean {
-    return type.toLowerCase() === 'deepseek';
+    return type.toLowerCase() === 'deepseek'
   }
 }
 
 // Moonshot 策略
 class MoonshotStrategy extends BaseStrategy {
   parse(response: any): ParsedBalance {
-    const data = response.data || {};
+    const data = response.data || {}
     return {
       balance: parseFloat(data.available_balance || 0),
       currency: 'CNY',
@@ -78,67 +78,67 @@ class MoonshotStrategy extends BaseStrategy {
       grantedBalance: parseFloat(data.voucher_balance || 0),
       toppedUpBalance: parseFloat(data.cash_balance || 0),
       raw: response
-    };
+    }
   }
   supports(type: string): boolean {
-    return type.toLowerCase() === 'moonshot';
+    return type.toLowerCase() === 'moonshot'
   }
 }
 
 // AIHubMix 策略
 class AIHubMixStrategy extends BaseStrategy {
   parse(response: any): ParsedBalance {
-    const totalUsage = parseFloat(response.total_usage || 0);
+    const totalUsage = parseFloat(response.total_usage || 0)
     return {
       balance: totalUsage < 0 ? 999999 : totalUsage, // 负数代表无限
       currency: 'USD',
       isAvailable: totalUsage !== 0,
       raw: response
-    };
+    }
   }
   supports(type: string): boolean {
-    return type.toLowerCase() === 'aihubmix';
+    return type.toLowerCase() === 'aihubmix'
   }
 }
 
 // OpenRouter 策略
 class OpenRouterStrategy extends BaseStrategy {
   parse(response: any): ParsedBalance {
-    const data = response.data || {};
-    const totalCredits = parseFloat(data.total_credits || 0);
-    const totalUsage = parseFloat(data.total_usage || 0);
+    const data = response.data || {}
+    const totalCredits = parseFloat(data.total_credits || 0)
+    const totalUsage = parseFloat(data.total_usage || 0)
     return {
       balance: totalCredits - totalUsage,
       currency: 'USD',
-      isAvailable: (totalCredits - totalUsage) > 0,
+      isAvailable: totalCredits - totalUsage > 0,
       raw: response
-    };
+    }
   }
   supports(type: string): boolean {
-    return type.toLowerCase() === 'openrouter';
+    return type.toLowerCase() === 'openrouter'
   }
 }
 
 // 火山引擎策略
 class VolcEngineStrategy extends BaseStrategy {
   parse(response: any): ParsedBalance {
-    const result = response.Result || {};
+    const result = response.Result || {}
     return {
       balance: parseFloat(result.AvailableBalance || 0),
       currency: 'CNY',
       isAvailable: parseFloat(result.AvailableBalance || 0) > 0,
       raw: response
-    };
+    }
   }
   supports(type: string): boolean {
-    const t = type.toLowerCase();
-    return t === 'volcengine' || t === 'volcano' || t === '火山';
+    const t = type.toLowerCase()
+    return t === 'volcengine' || t === 'volcano' || t === '火山'
   }
 }
 
 export class BalanceParser {
   private logger: Logger
-  private strategies: IBalanceStrategy[] = [];
+  private strategies: IBalanceStrategy[] = []
 
   constructor() {
     this.logger = new Logger('BalanceParser')
@@ -148,7 +148,7 @@ export class BalanceParser {
       new AIHubMixStrategy(),
       new OpenRouterStrategy(),
       new VolcEngineStrategy()
-    ];
+    ]
   }
 
   parse(data: any, config: ParserConfig): ParsedBalance {
@@ -156,10 +156,10 @@ export class BalanceParser {
 
     // 1. 如果指定了 parserType，使用策略模式
     if (config.parserType) {
-      const strategy = this.strategies.find(s => s.supports(config.parserType!));
+      const strategy = this.strategies.find((s) => s.supports(config.parserType!))
       if (strategy) {
         this.logger.info(`[Parser] 使用策略: ${config.parserType}`)
-        return strategy.parse(data);
+        return strategy.parse(data)
       }
     }
 
@@ -173,7 +173,11 @@ export class BalanceParser {
       }
 
       // 字段映射逻辑
-      if (config.balanceMappings && Array.isArray(config.balanceMappings) && config.balanceMappings.length > 0) {
+      if (
+        config.balanceMappings &&
+        Array.isArray(config.balanceMappings) &&
+        config.balanceMappings.length > 0
+      ) {
         return this.parseByMappings(data, config)
       }
 
@@ -266,11 +270,14 @@ export class BalanceParser {
 
   private parseCustom(data: any, code: string): ParsedBalance {
     try {
-      const fn = new Function('data', `
+      const fn = new Function(
+        'data',
+        `
         "use strict";
         ${code}
         return result;
-      `)
+      `
+      )
       const result = fn(data)
       return {
         balance: result.balance,
