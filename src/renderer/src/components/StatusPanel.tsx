@@ -212,12 +212,21 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
                       </div>
                     </div>
                     <div
-                      className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-xl shadow-inner ${status.status === 'error'
-                        ? 'bg-destructive/10 text-destructive'
-                        : 'bg-primary/10 text-primary'
+                      className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl shadow-inner overflow-hidden p-2 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 ${status.status === 'error'
+                          ? 'bg-destructive/10 text-destructive'
+                          : 'bg-primary/10 text-primary'
                         }`}
                     >
-                      {styleInfo.icon}
+                      <img
+                        src={balanceList.find((t) => t.name === config?.name)?.logo || config?.logo}
+                        alt={config?.name}
+                        className="w-full h-full object-contain drop-shadow-sm"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                          e.currentTarget.parentElement?.classList.add('text-2xl')
+                          e.currentTarget.parentElement!.innerHTML = styleInfo.icon
+                        }}
+                      />
                     </div>
                   </div>
 

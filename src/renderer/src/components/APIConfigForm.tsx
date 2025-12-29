@@ -49,6 +49,11 @@ export const APIConfigForm: React.FC<APIConfigFormProps> = ({
 
   // 加载配置模板
   const templates = balanceList || []
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const filteredTemplates = templates.filter((t) =>
+    t.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   // 当选择模板时自动填充配置
   const handleTemplateChange = (templateName: string) => {
@@ -174,37 +179,81 @@ export const APIConfigForm: React.FC<APIConfigFormProps> = ({
         {/* 配置模板选择 */}
         {templates.length > 0 && (
           <div>
-            <label className="block text-xs font-black uppercase tracking-widest mb-2 text-muted-foreground/70 ml-1">
-              选择厂商 / 服务商
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {templates.map((template: BalanceTemplateConfig) => (
-                <button
-                  key={template.name}
-                  type="button"
-                  onClick={() => handleTemplateChange(template.name)}
-                  className={`px-4 py-3 rounded-xl border text-sm font-bold transition-all duration-300 flex flex-col items-center gap-2 ${
-                    formData.name === template.name
-                      ? 'bg-primary/10 border-primary text-primary shadow-inner'
-                      : 'bg-muted/20 border-border/50 text-muted-foreground hover:border-primary/30 hover:bg-muted/40'
-                  }`}
-                >
-                  {template.logo ? (
-                    <img
-                      src={template.logo}
-                      alt={template.name}
-                      className="w-8 h-8 object-contain"
-                    />
-                  ) : (
-                    <span className="text-lg">⚙️</span>
-                  )}
-                  {template.name}
-                </button>
-              ))}
+            <div className="flex items-center justify-between mb-3 pl-1">
+              <label className="text-xs font-black uppercase tracking-widest text-muted-foreground/70">
+                选择厂商 / 服务商
+              </label>
+              <div className="relative group/search w-48">
+                <input
+                  type="text"
+                  placeholder="搜索厂商..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-3 py-1.5 pl-8 text-xs bg-muted/30 border border-border/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-card transition-all placeholder:text-muted-foreground/50"
+                  spellCheck={false}
+                />
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 text-[10px] group-focus-within/search:text-primary transition-colors">
+                  🔍
+                </span>
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-foreground p-0.5 rounded-full"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             </div>
-            <p className="text-[10px] text-muted-foreground/60 mt-3 ml-1">
-              选择预设模板将自动配置 API 终端、请求方法及解析策略
-            </p>
+
+            <div className="bg-muted/10 border border-border/30 rounded-xl p-2 max-h-56 overflow-y-auto custom-scrollbar">
+              {filteredTemplates.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {filteredTemplates.map((template: BalanceTemplateConfig) => (
+                    <button
+                      key={template.name}
+                      type="button"
+                      onClick={() => handleTemplateChange(template.name)}
+                      className={`relative px-3 py-3 rounded-xl border text-xs font-bold transition-all duration-300 flex flex-col items-center gap-2 group/item ${formData.name === template.name
+                        ? 'bg-primary/10 border-primary text-primary shadow-inner ring-1 ring-primary/20'
+                        : 'bg-card border-border/50 text-muted-foreground hover:border-primary/30 hover:bg-card/80 hover:text-foreground hover:shadow-sm'
+                        }`}
+                    >
+                      <div className={`p-1.5 rounded-lg transition-colors duration-300 ${formData.name === template.name ? 'bg-background/50' : 'bg-muted/30 group-hover/item:bg-primary/5'}`}>
+                        {template.logo ? (
+                          <img
+                            src={template.logo}
+                            alt={template.name}
+                            className={`w-6 h-6 object-contain transition-transform duration-300 ${formData.name === template.name ? 'scale-110' : 'group-hover/item:scale-110'}`}
+                          />
+                        ) : (
+                          <span className="text-lg">⚙️</span>
+                        )}
+                      </div>
+                      <span className="text-center truncate w-full px-1">{template.name}</span>
+
+                      {/* Selected indicator checkmark */}
+                      {formData.name === template.name && (
+                        <div className="absolute top-2 right-2 text-[10px] text-primary bg-primary/10 rounded-full w-4 h-4 flex items-center justify-center">
+                          ✓
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground/40">
+                  <span className="text-2xl mb-2">👻</span>
+                  <p className="text-xs font-medium">未找到匹配的厂商</p>
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="mt-2 text-[10px] text-primary hover:underline"
+                  >
+                    清除搜索
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
