@@ -37,7 +37,8 @@ jobs:
         with:
           name: windows-build
           path: dist/*.exe
-          retention-days: 30
+          retention-days: 14
+          compression-level: 9
 
   build-unpack:
     name: Build Unpacked (Windows)
@@ -59,12 +60,13 @@ jobs:
       - name: Build unpacked version
         run: npm run build:unpack
 
-      - name: Upload unpacked build
+      - name: Upload unpacked build (disabled due to storage quota)
+        if: false  # 暂时禁用上传以解决存储配额问题
         uses: actions/upload-artifact@v4
         with:
           name: unpacked-build
           path: dist/win-unpacked/
-          retention-days: 30
+          retention-days: 7
 
   build-macos:
     name: Build macOS
@@ -91,7 +93,8 @@ jobs:
         with:
           name: macos-build
           path: dist/*.dmg
-          retention-days: 30
+          retention-days: 14
+          compression-level: 9
 
   build-linux:
     name: Build Linux
@@ -121,7 +124,8 @@ jobs:
             dist/*.AppImage
             dist/*.deb
             dist/*.snap
-          retention-days: 30
+          retention-days: 14
+          compression-level: 9
 
   create-release:
     name: Create Release
