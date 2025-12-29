@@ -36,6 +36,7 @@ export interface ParserConfig {
   isAvailablePath?: string
   balanceMappings?: BalanceInfoMapping[]
   customParser?: string
+  parserType?: string // 新增：用于策略模式
 }
 
 export interface MonitoringConfig {
@@ -220,9 +221,9 @@ export class ConfigManager {
     try {
       const files = existsSync(this.backupDir)
         ? readdirSync(this.backupDir).map((f: string) => ({
-            name: f,
-            time: statSync(join(this.backupDir, f)).mtime
-          }))
+          name: f,
+          time: statSync(join(this.backupDir, f)).mtime
+        }))
         : []
 
       if (files.length > 10) {
@@ -429,7 +430,8 @@ export class ConfigManager {
       const data = JSON.parse(jsonString)
 
       // 验证必要字段
-      if (!data.name || !data.api?.url || !data.parser?.balancePath) {
+      const hasValidParser = data.parser?.balancePath || data.parser?.parserType || data.parser?.balanceMappings || data.parser?.customParser
+      if (!data.name || !data.api?.url || !hasValidParser) {
         throw new Error('配置缺少必要字段')
       }
 
@@ -472,9 +474,10 @@ export class ConfigManager {
     const hasMappings = config.parser.balanceMappings && config.parser.balanceMappings.length > 0
     const hasCustomParser =
       config.parser.customParser && config.parser.customParser.trim().length > 0
+    const hasParserType = config.parser.parserType && config.parser.parserType.trim().length > 0
 
-    if (!hasBalancePath && !hasMappings && !hasCustomParser) {
-      errors.push('余额解析规则不能为空（必须配置解析路径、字段映射或自定义脚本）')
+    if (!hasBalancePath && !hasMappings && !hasCustomParser && !hasParserType) {
+      errors.push('余额解析规则不能为空（必须配置解析路径、字段映射、自定义脚本或策略类型）')
     }
 
     if (config.monitoring.interval < 5) {
@@ -498,12 +501,12 @@ export class ConfigManager {
     const lastUpdate =
       configs.length > 0
         ? configs.reduce(
-            (latest, c) => {
-              const time = new Date(c.updatedAt).getTime()
-              return !latest || time > new Date(latest).getTime() ? c.updatedAt : latest
-            },
-            null as string | null
-          )
+          (latest, c) => {
+            const time = new Date(c.updatedAt).getTime()
+            return !latest || time > new Date(latest).getTime() ? c.updatedAt : latest
+          },
+          null as string | null
+        )
         : null
 
     return {

@@ -61,9 +61,9 @@ export interface Notification {
 
 // 认证配置类型
 export interface AuthConfig {
-  type: 'Basic' | 'Bearer'
+  type: 'Basic' | 'Bearer' | 'APIKey'
   apiKey: string
-  headerKey?: 'Authorization' | 'X-Api-Key'
+  headerKey?: 'Authorization' | 'X-Api-Key' | string
 }
 
 // 响应字段映射类型
@@ -96,7 +96,10 @@ export interface ParserConfig {
   balancePath: string
   currencyPath?: string
   availablePath?: string
+  isAvailablePath?: string
   customParser?: string
+  parserType?: string // 新增：用于策略模式
+  balanceMappings?: BalanceInfoMapping[]
 }
 
 export interface ParsedBalance {
@@ -153,6 +156,7 @@ export interface BalanceMonitorConfig {
     currencyPath?: string
     availablePath?: string
     customParser?: string
+    parserType?: string // 新增：用于策略模式
   }
   monitoring: MonitoringConfig
   thresholds: ThresholdConfig

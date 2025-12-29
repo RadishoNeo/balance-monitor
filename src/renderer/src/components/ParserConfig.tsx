@@ -67,7 +67,9 @@ export const ParserConfig: React.FC<ParserConfigProps> = ({
         }
       ],
     customParser: initialData?.customParser || parserFormState.parser?.customParser || '',
-    isCustomParser: !!(initialData?.customParser || parserFormState.parser?.customParser)
+    isCustomParser: !!(initialData?.customParser || parserFormState.parser?.customParser),
+    parserType:
+      (initialData as any)?.parserType || (parserFormState.parser as any)?.parserType || ''
   }))
 
   const [showCustom, setShowCustom] = React.useState(
@@ -80,7 +82,8 @@ export const ParserConfig: React.FC<ParserConfigProps> = ({
       parser: {
         isAvailablePath: formData.isAvailablePath,
         balanceMappings: formData.balanceMappings,
-        customParser: formData.customParser
+        customParser: formData.customParser,
+        parserType: formData.parserType
       }
     })
   }, [formData, updateParserForm])

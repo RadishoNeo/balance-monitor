@@ -5,6 +5,27 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.8] - 2025-12-29
+
+### 新增
+
+- **策略模式解析器架构**: 实现基于策略模式的余额解析器系统
+  - 添加 `BalanceParserFactory` 工厂类管理解析器
+  - 添加多个厂商解析器：DeepSeek、Moonshot、AIHubMix、OpenRouter、VolcEngine
+  - 添加 `BalanceMonitorService` 监控服务
+- **类型定义**: 新增标准化余额接口和解析器接口
+
+### 改进
+
+- **代码结构**: 将解析逻辑从主进程分离到独立的服务模块
+- **可扩展性**: 支持通过策略模式轻松添加新厂商解析器
+- **错误处理**: 改进监控服务的错误处理机制
+
+### 更改
+
+- **版本**: 更新 `package.json` 版本从 1.0.7 到 1.0.8
+- **文件位置**: 将解析相关代码移动到 `src/renderer/src/services/balance/` 目录
+
 ## [1.0.7] - 2025-12-28
 
 ### 新增

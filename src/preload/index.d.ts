@@ -35,6 +35,7 @@ export interface ParserConfig {
   currencyPath?: string
   availablePath?: string
   customParser?: string
+  parserType?: string // 新增：用于策略模式
 }
 
 // 解析结果
@@ -65,9 +66,9 @@ export interface BalanceMonitorConfig {
   url?: string // 扁平化配置字段
   method?: 'GET' | 'POST'
   auth?: {
-    type: 'Basic' | 'Bearer'
+    type: 'Basic' | 'Bearer' | 'APIKey'
     apiKey: string
-    headerKey?: 'Authorization' | 'X-Api-Key'
+    headerKey?: 'Authorization' | 'X-Api-Key' | string
   }
   timeout?: number
   body?: string
@@ -78,9 +79,9 @@ export interface BalanceMonitorConfig {
     body?: string
     timeout?: number
     auth?: {
-      type: 'Basic' | 'Bearer'
+      type: 'Basic' | 'Bearer' | 'APIKey'
       apiKey: string
-      headerKey?: 'Authorization' | 'X-Api-Key'
+      headerKey?: 'Authorization' | 'X-Api-Key' | string
     }
   }
   parser: {
@@ -91,12 +92,14 @@ export interface BalanceMonitorConfig {
     currencyPath?: string
     availablePath?: string
     customParser?: string
+    parserType?: string // 新增：用于策略模式
   }
   monitoring: MonitoringConfig
   thresholds: ThresholdConfig
   createdAt: string
   updatedAt: string
   enabled: boolean
+  isPreset?: boolean // 标识是否为预设配置
   response?: {
     is_available: string
     balance_infos: BalanceInfoMapping[]

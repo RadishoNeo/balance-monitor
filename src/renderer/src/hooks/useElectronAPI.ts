@@ -43,7 +43,9 @@ export const useElectronEvents = () => {
   const [navigateToConfig, setNavigateToConfig] = useState(false)
 
   useEffect(() => {
-    if (!api) return
+    if (!api) {
+      return
+    }
 
     // 监听余额更新
     const unsubscribeBalance = api.onBalanceUpdate((data) => {

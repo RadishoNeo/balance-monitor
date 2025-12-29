@@ -21,6 +21,7 @@ export const APIConfigForm: React.FC<APIConfigFormProps> = ({
   loading = false,
   configId
 }) => {
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const [formData, setFormData] = useState<Partial<BalanceMonitorConfig>>({
     name: initialData?.name || '',
     url: initialData?.url || '',
@@ -157,137 +158,199 @@ export const APIConfigForm: React.FC<APIConfigFormProps> = ({
   }, [formData, updateAPIForm])
 
   return (
-    <div className="space-y-4 group">
+    <div className="space-y-6 group">
       {/* 保存状态指示器 */}
-      <div className="text-xs text-muted-foreground text-right h-4">
-        {isSaving && <span className="text-primary italic">保存中...</span>}
+      <div className="flex justify-between items-center h-4">
+        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+          身份认证
+        </h3>
+        <div className="text-xs text-muted-foreground">
+          {isSaving && <span className="text-primary italic animate-pulse">自动保存中...</span>}
+        </div>
       </div>
 
-      {/* 配置模板选择 */}
-      {templates.length > 0 && (
-        <div>
-          <label className="block text-sm font-medium mb-1 text-foreground">配置模板（可选）</label>
-          <select
-            value={formData.name || ''}
-            onChange={(e) => handleTemplateChange(e.target.value)}
-            className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="">不使用模板</option>
-            {templates.map((template: BalanceTemplateConfig) => (
-              <option key={template.name} value={template.name}>
-                {template.name}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-muted-foreground mt-1">选择预配置的服务模板以自动填充设置</p>
+      <div className="bg-card/30 border border-border/50 rounded-2xl p-6 space-y-6 shadow-sm">
+        {/* 配置模板选择 */}
+        {templates.length > 0 && (
+          <div>
+            <label className="block text-xs font-black uppercase tracking-widest mb-2 text-muted-foreground/70 ml-1">
+              选择厂商 / 服务商
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {templates.map((template: BalanceTemplateConfig) => (
+                <button
+                  key={template.name}
+                  type="button"
+                  onClick={() => handleTemplateChange(template.name)}
+                  className={`px-4 py-3 rounded-xl border text-sm font-bold transition-all duration-300 flex flex-col items-center gap-2 ${
+                    formData.name === template.name
+                      ? 'bg-primary/10 border-primary text-primary shadow-inner'
+                      : 'bg-muted/20 border-border/50 text-muted-foreground hover:border-primary/30 hover:bg-muted/40'
+                  }`}
+                >
+                  <span className="text-lg">{template.icon || '⚙️'}</span>
+                  {template.name}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground/60 mt-3 ml-1">
+              选择预设模板将自动配置 API 终端、请求方法及解析策略
+            </p>
+          </div>
+        )}
+
+        {/* API密钥 - 核心输入项 */}
+        <div className="relative group/input">
+          <label className="block text-xs font-black uppercase tracking-widest mb-2 text-primary ml-1">
+            API KEY (密钥)
+          </label>
+          <div className="relative">
+            <input
+              type="password"
+              value={formData.auth?.apiKey || ''}
+              onChange={(e) => handleAuthChange('apiKey', e.target.value)}
+              placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx"
+              className="w-full px-4 py-4 bg-muted/30 border border-border/50 text-foreground rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-card transition-all font-mono text-sm shadow-sm group-hover/input:border-primary/30"
+            />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/30 pointer-events-none">
+              🔒
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground/60 mt-2 ml-1 flex items-center gap-1">
+            <span>💡</span>
+            {formData.auth?.type === 'Bearer'
+              ? '请输入 API 令牌，系统将自动添加 Bearer 前缀'
+              : '请输入 Basic 认证信息，系统将自动进行 Base64 编码'}
+          </p>
+        </div>
+      </div>
+
+      {/* 高级设置切换 */}
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary flex items-center gap-1.5 transition-colors ml-1"
+        >
+          <span>{showAdvanced ? '▼' : '▶'}</span>
+          高级配置 (非预设厂商请展开)
+        </button>
+      </div>
+
+      {/* 高级设置面板 */}
+      {showAdvanced && (
+        <div className="bg-muted/10 border border-border/30 rounded-2xl p-6 space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
+          {/* API地址 */}
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest mb-1.5 text-muted-foreground ml-1">
+              接口终端 (Endpoint)
+            </label>
+            <input
+              type="url"
+              value={formData.url}
+              onChange={(e) => handleFieldChange('url', e.target.value)}
+              placeholder="https://api.example.com/v1/balance"
+              className="w-full px-3 py-2.5 border border-border/50 bg-card/50 text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono text-xs"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* 请求方法 */}
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-1.5 text-muted-foreground ml-1">
+                请求方法
+              </label>
+              <select
+                value={formData.method}
+                onChange={(e) => handleFieldChange('method', e.target.value)}
+                className="w-full px-3 py-2.5 border border-border/50 bg-card/50 text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 text-xs"
+              >
+                <option value="GET">GET (获取数据)</option>
+                <option value="POST">POST (提交 JSON)</option>
+              </select>
+            </div>
+
+            {/* 认证类型 */}
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-1.5 text-muted-foreground ml-1">
+                认证方式
+              </label>
+              <select
+                value={formData.auth?.type || 'Bearer'}
+                onChange={(e) => handleAuthChange('type', e.target.value)}
+                className="w-full px-3 py-2.5 border border-border/50 bg-card/50 text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 text-xs"
+              >
+                <option value="Bearer">Bearer Token (Sk-模式)</option>
+                <option value="Basic">Basic Auth (账号密码)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Header Key */}
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-1.5 text-muted-foreground ml-1">
+                HTTP 报头键名
+              </label>
+              <select
+                value={formData.auth?.headerKey || 'Authorization'}
+                onChange={(e) => handleAuthChange('headerKey', e.target.value)}
+                className="w-full px-3 py-2.5 border border-border/50 bg-card/50 text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 text-xs"
+              >
+                <option value="Authorization">Authorization</option>
+                <option value="X-Api-Key">X-Api-Key</option>
+              </select>
+            </div>
+
+            {/* 超时时间 */}
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-1.5 text-muted-foreground ml-1">
+                请求超时 (MS)
+              </label>
+              <input
+                type="number"
+                value={formData.timeout}
+                onChange={(e) => handleFieldChange('timeout', parseInt(e.target.value))}
+                min="1000"
+                step="1000"
+                className="w-full px-3 py-2.5 border border-border/50 bg-card/50 text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 text-xs"
+              />
+            </div>
+          </div>
+
+          {/* 请求体 */}
+          {formData.method === 'POST' && (
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-1.5 text-muted-foreground ml-1">
+                JSON 请求载荷 (Body)
+              </label>
+              <textarea
+                value={formData.body}
+                onChange={(e) => handleFieldChange('body', e.target.value)}
+                placeholder='{"key": "value"}'
+                rows={3}
+                className="w-full px-3 py-2.5 border border-border/50 bg-card/50 text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono text-xs"
+              />
+            </div>
+          )}
         </div>
       )}
 
-      {/* API地址 */}
-      <div>
-        <label className="block text-sm font-medium mb-1 text-foreground">API地址</label>
-        <input
-          type="url"
-          value={formData.url}
-          onChange={(e) => handleFieldChange('url', e.target.value)}
-          placeholder="https://api.example.com/balance"
-          className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
-        />
-      </div>
-
-      {/* 请求方法 */}
-      <div>
-        <label className="block text-sm font-medium mb-1 text-foreground">请求方法</label>
-        <select
-          value={formData.method}
-          onChange={(e) => handleFieldChange('method', e.target.value)}
-          className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="GET">GET</option>
-          <option value="POST">POST</option>
-        </select>
-      </div>
-
-      {/* 认证类型 */}
-      <div>
-        <label className="block text-sm font-medium mb-1 text-foreground">认证类型</label>
-        <select
-          value={formData.auth?.type || 'Bearer'}
-          onChange={(e) => handleAuthChange('type', e.target.value)}
-          className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="Bearer">Bearer Token</option>
-          <option value="Basic">Basic Auth</option>
-        </select>
-      </div>
-
-      {/* Header Key */}
-      <div>
-        <label className="block text-sm font-medium mb-1 text-foreground">认证Header键</label>
-        <select
-          value={formData.auth?.headerKey || 'Authorization'}
-          onChange={(e) => handleAuthChange('headerKey', e.target.value)}
-          className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="Authorization">Authorization</option>
-          <option value="X-Api-Key">X-Api-Key</option>
-        </select>
-      </div>
-
-      {/* API密钥 */}
-      <div>
-        <label className="block text-sm font-medium mb-1 text-foreground">API密钥</label>
-        <input
-          type="password"
-          value={formData.auth?.apiKey || ''}
-          onChange={(e) => handleAuthChange('apiKey', e.target.value)}
-          placeholder="输入你的API密钥"
-          className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          {formData.auth?.type === 'Bearer'
-            ? '格式: Bearer Token，例如: sk-xxxxxxxxxxxx'
-            : '格式: 用户名:密码 的Base64编码'}
-        </p>
-      </div>
-
-      {/* 请求体（POST时显示） */}
-      {formData.method === 'POST' && (
-        <div>
-          <label className="block text-sm font-medium mb-1 text-foreground">请求体 (JSON)</label>
-          <textarea
-            value={formData.body}
-            onChange={(e) => handleFieldChange('body', e.target.value)}
-            placeholder='{"key": "value"}'
-            rows={3}
-            className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
-          />
-        </div>
-      )}
-
-      {/* 超时时间 */}
-      <div>
-        <label className="block text-sm font-medium mb-1 text-foreground">超时时间 (毫秒)</label>
-        <input
-          type="number"
-          value={formData.timeout}
-          onChange={(e) => handleFieldChange('timeout', parseInt(e.target.value))}
-          min="1000"
-          step="1000"
-          className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-        />
-      </div>
-
-      {/* 按钮组（移除保存按钮，只保留测试按钮） */}
-      <div className="flex gap-2 pt-2">
+      {/* 底部按钮栏 */}
+      <div className="flex justify-end pt-4">
         {onTest && (
           <button
             type="button"
             onClick={handleTest}
             disabled={loading}
-            className="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 disabled:opacity-50"
+            className="flex items-center gap-2 px-8 py-3 bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 disabled:opacity-50"
           >
-            测试连接
+            {loading ? (
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            ) : (
+              <span>⚡</span>
+            )}
+            测试连接 & 完成配置
           </button>
         )}
       </div>

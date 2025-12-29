@@ -56,7 +56,8 @@ const defaultParserFormState: Partial<BalanceMonitorConfig> = {
     balancePath: '',
     currencyPath: '',
     availablePath: '',
-    customParser: ''
+    customParser: '',
+    parserType: ''
   }
 }
 

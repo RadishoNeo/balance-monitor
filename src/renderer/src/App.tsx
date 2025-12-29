@@ -8,7 +8,6 @@ import { Toaster, toast } from 'sonner'
 // 组件导入
 import { ConfigManager } from './components/ConfigManager'
 import { APIConfigForm } from './components/APIConfigForm'
-import { ParserConfig } from './components/ParserConfig'
 import { MonitoringSettings } from './components/MonitoringSettings'
 import { StatusPanel } from './components/StatusPanel'
 import { LogViewer } from './components/LogViewer'
@@ -26,8 +25,7 @@ function App(): React.JSX.Element {
   const [editingConfig, setEditingConfig] = useState<BalanceMonitorConfig | undefined>(undefined)
   const [showNewConfig, setShowNewConfig] = useState(false)
   const [logs, setLogs] = useState<any[]>([])
-  const [activeTab, setActiveTab] = useState<'config' | 'parser' | 'monitoring' | 'test'>('config')
-  const [sampleData, setSampleData] = useState<any>(null)
+  const [activeTab, setActiveTab] = useState<'config' | 'monitoring' | 'test'>('config')
 
   // 加载日志
   const loadLogs = useCallback(async () => {
@@ -126,30 +124,7 @@ function App(): React.JSX.Element {
     }
 
     const result = await balanceMonitor.testApiConnection(apiRequest)
-    if (result.success) {
-      setSampleData(result.data)
-    }
     return result
-  }
-
-  // 解析器测试
-  const handleTestParser = async (data: any, parserConfig: any) => {
-    let testData = data
-    if (!testData) {
-      // 如果没有测试数据，尝试从当前的 API 配置中获取
-      const apiState = (await import('./store')).useFormStore.getState().apiFormState
-      if (!apiState.api?.url) {
-        return { success: false, error: '请先在"API配置"标签页中设置 API 地址并填写 API Key' }
-      }
-
-      // 进行一次 API 测试以获取数据
-      const apiResult = await handleTestAPI(apiState)
-      if (!apiResult.success) {
-        return { success: false, error: `无法获取 API 数据: ${apiResult.message || '连接超时'}` }
-      }
-      testData = apiResult.data
-    }
-    return await balanceMonitor.testParser(testData, parserConfig)
   }
 
   // 保存完整配置（分步骤）
@@ -196,8 +171,9 @@ function App(): React.JSX.Element {
       if (stepData.isPreset !== undefined) {
         newConfig.isPreset = stepData.isPreset
       }
-    } else if (activeTab === 'parser' && stepData.parser) {
-      newConfig.parser = stepData.parser
+      if (stepData.isPreset !== undefined) {
+        newConfig.isPreset = stepData.isPreset
+      }
     } else if (activeTab === 'monitoring') {
       if (stepData.monitoring) newConfig.monitoring = stepData.monitoring
       if (stepData.thresholds) newConfig.thresholds = stepData.thresholds
@@ -306,29 +282,26 @@ function App(): React.JSX.Element {
           // 准备 APIConfigForm 的初始数据（扁平结构）
           const apiFormInitialData = editingConfig
             ? {
-              name: editingConfig.name,
-              url: editingConfig.api?.url || '',
-              method: editingConfig.api?.method || 'GET',
-              auth: editingConfig.api?.auth || {
-                type: 'Bearer' as const,
-                apiKey: '',
-                headerKey: 'Authorization' as const
-              },
-              timeout: editingConfig.api?.timeout || 10000,
-              body: editingConfig.api?.body || ''
-            }
+                name: editingConfig.name,
+                url: editingConfig.api?.url || '',
+                method: editingConfig.api?.method || 'GET',
+                auth: editingConfig.api?.auth || {
+                  type: 'Bearer' as const,
+                  apiKey: '',
+                  headerKey: 'Authorization' as const
+                },
+                timeout: editingConfig.api?.timeout || 10000,
+                body: editingConfig.api?.body || ''
+              }
             : undefined
 
           // 处理标签页切换（保存当前标签页的数据）
-          const handleTabSwitch = async (newTab: 'config' | 'parser' | 'monitoring' | 'test') => {
+          const handleTabSwitch = async (newTab: 'config' | 'monitoring' | 'test') => {
             // 如果切换到不同的标签页，先强制保存当前标签页的数据
             if (newTab !== activeTab && editingConfig) {
               // 根据当前标签页重新保存数据，确保数据不丢失
               if (activeTab === 'config') {
                 // API配置的数据会通过 onChange 自动保存
-              } else if (activeTab === 'parser') {
-                // 解析器数据需要重新保存
-                await handleSaveFullConfig({ parser: editingConfig.parser })
               } else if (activeTab === 'monitoring') {
                 // 监控设置数据需要重新保存
                 await handleSaveFullConfig({
@@ -392,17 +365,17 @@ function App(): React.JSX.Element {
                 <div className="flex items-center gap-2 bg-muted/30 p-2 rounded-2xl self-start">
                   {[
                     { key: 'config', label: 'API配置', icon: '🔗' },
-                    { key: 'parser', label: '解析器', icon: '🔍' },
                     { key: 'monitoring', label: '监控设置', icon: '🔔' }
                     // { key: 'test', label: '测试', icon: '🧪' }
                   ].map((tab) => (
                     <button
                       key={tab.key}
                       onClick={() => handleTabSwitch(tab.key as any)}
-                      className={`flex items-center gap-2.5 px-6 py-2.5 text-sm font-bold transition-all duration-300 rounded-xl ${activeTab === tab.key
+                      className={`flex items-center gap-2.5 px-6 py-2.5 text-sm font-bold transition-all duration-300 rounded-xl ${
+                        activeTab === tab.key
                           ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 select-none'
                           : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
-                        }`}
+                      }`}
                     >
                       <span className="text-lg">{tab.icon}</span>
                       {tab.label}
@@ -421,30 +394,6 @@ function App(): React.JSX.Element {
                     }}
                     onTest={handleTestAPI}
                     loading={configManager.loading}
-                    configId={editingConfig?.id}
-                  />
-                )}
-
-                {activeTab === 'parser' && (
-                  <ParserConfig
-                    initialData={{
-                      ...editingConfig?.parser,
-                      isPreset: editingConfig?.isPreset
-                    }}
-                    onChange={async (parserData) => {
-                      // 处理新的解析器数据结构
-                      if (editingConfig) {
-                        await handleSaveFullConfig({
-                          parser: {
-                            ...editingConfig.parser,
-                            ...parserData
-                          }
-                        })
-                      }
-                    }}
-                    onTest={handleTestParser}
-                    loading={configManager.loading}
-                    sampleData={sampleData}
                     configId={editingConfig?.id}
                   />
                 )}
@@ -478,7 +427,7 @@ function App(): React.JSX.Element {
               onNewConfig={handleNewConfig}
               onEditConfig={handleEditConfig}
               onDeleteConfig={handleDeleteConfig}
-              onSetActiveConfig={async () => { }}
+              onSetActiveConfig={async () => {}}
               onExportConfig={handleExportConfig}
               onImportConfig={handleImportConfig}
               onToggleMonitoring={async (id, enabled) => {
@@ -531,10 +480,11 @@ function App(): React.JSX.Element {
                 <button
                   key={item.key}
                   onClick={() => setCurrentPage(item.key as PageType)}
-                  className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${currentPage === item.key
+                  className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                    currentPage === item.key
                       ? 'bg-card text-primary shadow-lg shadow-black/5 ring-1 ring-border/10 scale-105'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95'
-                    }`}
+                  }`}
                 >
                   <span className="text-lg">{item.icon}</span>
                   {item.label}
