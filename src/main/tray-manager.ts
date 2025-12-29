@@ -41,6 +41,9 @@ export class TrayManager {
 
     this.tray.setToolTip('余额监控 - 未运行')
     this.updateContextMenu()
+
+    // 点击任务栏图标 -> 显示主界面
+    this.tray.addListener('click', () => this.emit('show-window'))
   }
 
   private getIconPath(status: string): string {
@@ -111,7 +114,7 @@ export class TrayManager {
   private emit(event: string): void {
     // 通过事件发射器通知主进程
     if (this.tray) {
-      ;(this.tray as any).emit(event)
+      ; (this.tray as any).emit(event)
     }
   }
 
