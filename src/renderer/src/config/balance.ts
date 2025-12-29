@@ -1,11 +1,17 @@
 import { VendorConfig } from '../types/balance'
+import deepseekLogo from '../assets/providers/deepseek.png'
+import moonshotLogo from '../assets/providers/moonshot.png'
+import ppioLogo from '../assets/providers/ppio.png'
+import aihubmixLogo from '../assets/providers/aihubmix.png'
+import openrouterLogo from '../assets/providers/openrouter.png'
+import volcengineLogo from '../assets/providers/volcengine.png'
 
 export type { VendorConfig as BalanceTemplateConfig }
 
 const balanceList: VendorConfig[] = [
   {
     name: 'DeepSeek',
-    logo: 'src/assets/providers/deepseek.png',
+    logo: deepseekLogo,
     url: 'https://api.deepseek.com/user/balance',
     method: 'GET',
     auth: {
@@ -29,7 +35,7 @@ const balanceList: VendorConfig[] = [
   },
   {
     name: 'Moonshot (CN)',
-    logo: 'src/assets/providers/moonshot.png',
+    logo: moonshotLogo,
     url: 'https://api.moonshot.cn/v1/users/me/balance',
     method: 'GET',
     auth: {
@@ -53,7 +59,7 @@ const balanceList: VendorConfig[] = [
   },
   {
     name: '欧派云',
-    logo: 'src/assets/providers/ppio.png',
+    logo: ppioLogo,
     url: 'https://api.ppinfra.com/v3/user',
     method: 'GET',
     auth: {
@@ -77,7 +83,7 @@ const balanceList: VendorConfig[] = [
   },
   {
     name: 'Moonshot (AI)',
-    logo: 'src/assets/providers/moonshot.png',
+    logo: moonshotLogo,
     url: 'https://api.moonshot.ai/v1/users/me/balance',
     method: 'GET',
     auth: {
@@ -101,7 +107,7 @@ const balanceList: VendorConfig[] = [
   },
   {
     name: 'AIHubMix',
-    logo: 'src/assets/providers/aihubmix.png',
+    logo: aihubmixLogo,
     url: 'https://api.aihubmix.com/v1/user/usage',
     method: 'GET',
     auth: {
@@ -124,7 +130,7 @@ const balanceList: VendorConfig[] = [
   },
   {
     name: 'OpenRouter',
-    logo: 'src/assets/providers/openrouter.png',
+    logo: openrouterLogo,
     url: 'https://openrouter.ai/api/v1/user/credits',
     method: 'GET',
     auth: {
@@ -147,7 +153,7 @@ const balanceList: VendorConfig[] = [
   },
   {
     name: 'VolcEngine',
-    logo: 'src/assets/providers/volcengine.png',
+    logo: volcengineLogo,
     url: 'https://volcengine.com/api/balance',
     method: 'GET',
     auth: {

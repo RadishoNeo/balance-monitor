@@ -5,6 +5,29 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.1] - 2025-12-30
+
+### 新增
+
+- **Logo显示逻辑优化**: 统一从balance.ts配置文件中获取logo资源
+  - 在ConfigManager和StatusPanel组件中使用`balanceList.find()`动态获取logo
+  - 改进logo容器的样式设计，添加渐变背景和悬停效果
+
+### 更改
+
+- **资源导入优化**: 将balance.ts中的logo路径改为import语句
+  - 支持所有厂商logo：DeepSeek、Moonshot、欧派云、AIHubMix、OpenRouter、VolcEngine
+  - 提高构建时的资源处理效率
+- **UI组件优化**: 增强ConfigManager和StatusPanel组件的视觉效果
+  - 添加渐变背景、光泽效果和悬停动画
+  - 改进边框、阴影和毛玻璃效果
+
+### 移除
+
+- **冗余文档清理**: 删除`src/renderer/src/config/balance.md`文档文件
+  - 该文件包含各厂商API文档，已不再需要
+  - 减少项目体积，简化代码结构
+
 ## [1.1.0] - 2025-12-29
 
 ### 新增

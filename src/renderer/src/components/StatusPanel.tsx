@@ -1,5 +1,6 @@
 import React from 'react'
 import { MonitorStatus, BalanceMonitorConfig } from '../types'
+import { balanceList } from '../config/balance'
 
 interface StatusPanelProps {
   statuses: MonitorStatus[]
@@ -197,11 +198,13 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
                       </div>
                       <div className="flex items-center gap-2">
                         {config?.logo && (
-                          <img
-                            src={config.logo}
-                            alt={config.name}
-                            className="w-6 h-6 object-contain"
-                          />
+                          <div className="w-9 h-9 p-1.5 rounded-xl bg-background/40 border border-border/30 flex items-center justify-center backdrop-blur-sm shadow-sm transition-transform group-hover:scale-105 duration-500">
+                            <img
+                              src={balanceList.find((t) => t.name === config?.name)?.logo || config?.logo}
+                              alt={config.name}
+                              className="w-full h-full object-contain drop-shadow-sm"
+                            />
+                          </div>
                         )}
                         <h3 className="text-lg font-black tracking-tight truncate pr-4 text-foreground">
                           {config?.name || '未知服务'}
@@ -209,11 +212,10 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
                       </div>
                     </div>
                     <div
-                      className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-xl shadow-inner ${
-                        status.status === 'error'
-                          ? 'bg-destructive/10 text-destructive'
-                          : 'bg-primary/10 text-primary'
-                      }`}
+                      className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-xl shadow-inner ${status.status === 'error'
+                        ? 'bg-destructive/10 text-destructive'
+                        : 'bg-primary/10 text-primary'
+                        }`}
                     >
                       {styleInfo.icon}
                     </div>
@@ -238,25 +240,25 @@ export const StatusPanel: React.FC<StatusPanelProps> = ({
                     {/* 深层详细余额 (DeepSeek 等支持详情的模板) */}
                     {(status.grantedBalance !== undefined ||
                       status.toppedUpBalance !== undefined) && (
-                      <div className="mt-4 grid grid-cols-2 gap-3 p-3 rounded-2xl bg-muted/30 border border-border/20">
-                        <div>
-                          <p className="text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">
-                            充值余额
-                          </p>
-                          <p className="text-xs font-black text-foreground/80">
-                            {formatNum(status.toppedUpBalance) || '0.00'}
-                          </p>
+                        <div className="mt-4 grid grid-cols-2 gap-3 p-3 rounded-2xl bg-muted/30 border border-border/20">
+                          <div>
+                            <p className="text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">
+                              充值余额
+                            </p>
+                            <p className="text-xs font-black text-foreground/80">
+                              {formatNum(status.toppedUpBalance) || '0.00'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">
+                              赠送余额
+                            </p>
+                            <p className="text-xs font-black text-foreground/80">
+                              {formatNum(status.grantedBalance) || '0.00'}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-[8px] uppercase font-bold text-muted-foreground/60 mb-0.5">
-                            赠送余额
-                          </p>
-                          <p className="text-xs font-black text-foreground/80">
-                            {formatNum(status.grantedBalance) || '0.00'}
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                      )}
                   </div>
 
                   <div className="mt-6 flex items-center justify-between pt-4 border-t border-border/40">
