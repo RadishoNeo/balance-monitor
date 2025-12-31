@@ -31,7 +31,8 @@
       "Bash(git ls-tree:*)",
       "Bash(dir:*)",
       "Bash(move:*)",
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "mcp__github__get_file_contents"
     ],
     "deny": [
       "Bash(npm run dev)"
