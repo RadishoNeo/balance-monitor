@@ -304,19 +304,15 @@ npm run build:linux  # Linux
 
 完整版本历史请查看 [CHANGELOG.md](doc/changelog/CHANGELOG.md)
 
+---
+
 ## 👥 贡献者
 
-<a href="https://github.com/cherry-min"><img src="https://github.com/cherry-min.png" width="50px" style="border-radius: 50%;" alt="cherry-min"/></a>
-
-感谢所有为这个项目做出贡献的开发者。
-
-* **许可证**: **MIT**。个人和商业使用免费。
-* **安全性**: 所有配置数据都加密存储在本地。API密钥永远不会离开您的设备。
-* **隐私**: 无遥测或数据收集。您的数据保留在您的机器上。
+[![Contributors](https://contrib.rocks/image?repo=RadishoNeo/balance-monitor)](https://github.com/RadishoNeo/balance-monitor/graphs/contributors)
 
 ---
 
 <div align="center">
-  <p>如果您觉得这个工具有用，请在GitHub上给它一个 ⭐️！</p>
+  <p>如果您觉得这个工具有用，请在GitHub为我们点上 ⭐️！</p>
   <p>版权所有 © 2025 Balance Monitor 团队。</p>
 </div>
