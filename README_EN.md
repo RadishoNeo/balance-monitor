@@ -304,15 +304,11 @@ npm run build:linux  # Linux
 
 For complete version history, see [CHANGELOG.md](doc/changelog/CHANGELOG.md)
 
+---
+
 ## 👥 Contributors
 
-<a href="https://github.com/cherry-min"><img src="https://github.com/cherry-min.png" width="50px" style="border-radius: 50%;" alt="cherry-min"/></a>
-
-Special thanks to all developers who have contributed to this project.
-
-* **License**: **MIT**. Free for personal and commercial use.
-* **Security**: All configuration data is encrypted and stored locally. API keys never leave your device.
-* **Privacy**: No telemetry or data collection. Your data stays on your machine.
+[![Contributors](https://contrib.rocks/image?repo=RadishoNeo/balance-monitor)](https://github.com/RadishoNeo/balance-monitor/graphs/contributors)
 
 ---
 
